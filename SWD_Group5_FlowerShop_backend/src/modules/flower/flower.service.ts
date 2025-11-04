@@ -1,23 +1,27 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { CreateBookDto } from './dto/create-book.dto';
-import { UpdateBookDto } from './dto/update-book.dto';
-import { Prisma, BookStatus } from '@prisma/client';
-import { BookFilterDto } from './dto/book-filter.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class FlowerService {
   constructor(private prisma: PrismaService) { }
 
-  async createBookWithImage(body: any, imagePath: string) {
-    const { title, description, price, publishedAt, authorIds, categoryIds } =
-      body;
+  async getByShopId(shopId: string) {
+    const flowers = await this.prisma.book.findMany({
+      where: {
+        shopId,
+        status: 'AVAILABLE'
+      },
+      include: {
+        categories: true,
+        shop: true
+      }
+    });
+    return flowers;
+  }
 
-    const normalizedAuthorIds = Array.isArray(authorIds)
-      ? authorIds
-      : typeof authorIds === 'string'
-        ? [authorIds]
-        : [];
+  async createFlowerWithImage(body: any, imagePath: string) {
+    const { title, description, price, categoryIds } = body;
 
     const normalizedCategoryIds = Array.isArray(categoryIds)
       ? categoryIds
@@ -25,65 +29,54 @@ export class FlowerService {
         ? [categoryIds]
         : [];
 
-    console.log('Normalized Category IDs:', normalizedCategoryIds); // debug
-
     return this.prisma.book.create({
       data: {
         title,
         image: imagePath,
         description,
         price: Number(price),
-        publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
-        authors: {
-          connect: normalizedAuthorIds.map((id: string) => ({ id })),
-        },
+        ...(body.shopId && { shopId: body.shopId }),
         categories: {
           connect: normalizedCategoryIds.map((id: string) => ({ id })),
         },
       },
       include: {
-        authors: true,
         categories: true,
+        shop: true
       },
     });
   }
 
-  async disableBookById(bookId: string) {
+  async disableFlowerById(flowerId: string) {
     return this.prisma.book.update({
-      where: { id: bookId },
+      where: { id: flowerId },
       data: { status: 'DISABLE' },
     });
   }
+
   async getById(id: string) {
-    const book = await this.prisma.book.findUnique({
+    const flower = await this.prisma.book.findUnique({
       where: { id },
       include: {
-        authors: true,
         categories: true,
+        shop: true
       },
     });
 
-    if (!book) {
-      throw new NotFoundException(`Book with ID ${id} not found`);
+    if (!flower) {
+      throw new NotFoundException(`Flower with ID ${id} not found`);
     }
 
-    return book;
+    return flower;
   }
 
-  async updateBookWithImage(id: string, body: any, imagePath: string | null) {
-    const existingBook = await this.prisma.book.findUnique({ where: { id } });
-    if (!existingBook) {
-      throw new NotFoundException(`Book with ID ${id} not found`);
+  async updateFlowerWithImage(id: string, body: any, imagePath: string | null) {
+    const existingFlower = await this.prisma.book.findUnique({ where: { id } });
+    if (!existingFlower) {
+      throw new NotFoundException(`Flower with ID ${id} not found`);
     }
 
-    const { title, description, price, publishedAt, authorIds, categoryIds } =
-      body;
-
-    const normalizedAuthorIds = Array.isArray(authorIds)
-      ? authorIds
-      : typeof authorIds === 'string'
-        ? [authorIds]
-        : [];
+    const { title, description, price, categoryIds } = body;
 
     const normalizedCategoryIds = Array.isArray(categoryIds)
       ? categoryIds
@@ -97,13 +90,7 @@ export class FlowerService {
         ...(title && { title }),
         ...(description && { description }),
         ...(price && { price: Number(price) }),
-        ...(publishedAt && { publishedAt: new Date(publishedAt) }),
         ...(imagePath && { image: imagePath }),
-        ...(normalizedAuthorIds.length && {
-          authors: {
-            set: normalizedAuthorIds.map((id: string) => ({ id })),
-          },
-        }),
         ...(normalizedCategoryIds.length && {
           categories: {
             set: normalizedCategoryIds.map((id: string) => ({ id })),
@@ -111,23 +98,18 @@ export class FlowerService {
         }),
       },
       include: {
-        authors: true,
         categories: true,
+        shop: true
       },
     });
   }
 
-  async findAllBooks(query: BookFilterDto) {
-    const { page = 1, limit = 10, authorId, categoryId, status } = query;
+  async findAllFlowers(query: any) {
+    const { page = 1, limit = 10, categoryId, status } = query;
 
     const totalRecords = await this.prisma.book.count({
       where: {
-        ...(status && { status }),
-        ...(authorId && {
-          authors: {
-            some: { id: authorId },
-          },
-        }),
+        ...(status && { status: status as any }),
         ...(categoryId && {
           categories: {
             some: { id: categoryId },
@@ -136,14 +118,9 @@ export class FlowerService {
       },
     });
 
-    const books = await this.prisma.book.findMany({
+    const flowers = await this.prisma.book.findMany({
       where: {
-        ...(status && { status }),
-        ...(authorId && {
-          authors: {
-            some: { id: authorId },
-          },
-        }),
+        ...(status && { status: status as any }),
         ...(categoryId && {
           categories: {
             some: { id: categoryId },
@@ -151,8 +128,8 @@ export class FlowerService {
         }),
       },
       include: {
-        authors: true,
         categories: true,
+        shop: true
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -164,16 +141,16 @@ export class FlowerService {
       totalRecords,
       totalPages,
       currentPage: page,
-      books,
+      flowers,
     };
   }
   async updateStock(id: string, stock: number) {
-    const book = await this.prisma.book.findUnique({
+    const flower = await this.prisma.book.findUnique({
       where: { id },
     });
 
-    if (!book) {
-      throw new NotFoundException('Không tìm thấy sách');
+    if (!flower) {
+      throw new NotFoundException('Không tìm thấy hoa');
     }
 
     return this.prisma.book.update({
@@ -181,6 +158,7 @@ export class FlowerService {
       data: { stock },
     });
   }
+
   async getBestSellers(limit: number = 5) {
     return this.prisma.book.findMany({
       where: {
@@ -190,6 +168,10 @@ export class FlowerService {
         sold: 'desc',
       },
       take: limit,
+      include: {
+        categories: true,
+        shop: true
+      }
     });
   }
 
@@ -202,6 +184,10 @@ export class FlowerService {
         createdAt: 'desc',
       },
       take: 10,
+      include: {
+        categories: true,
+        shop: true
+      }
     });
   }
 

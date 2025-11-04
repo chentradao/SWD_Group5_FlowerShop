@@ -31,13 +31,20 @@ import {
 import { FlowerService } from './flower.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
-import { Prisma, BookStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { BookFilterDto } from './dto/book-filter.dto';
 
-@ApiTags('Books')
-@Controller('books')
+@ApiTags('Flowers')
+@Controller('flowers')
 export class FlowerController {
   constructor(private readonly flowerService: FlowerService) {}
+
+  @Get('shop/:shopId')
+  @ApiOperation({ summary: 'Get flowers by shop ID' })
+  @ApiParam({ name: 'shopId', required: true })
+  async getByShopId(@Param('shopId') shopId: string) {
+    return this.flowerService.getByShopId(shopId);
+  }
 
   @Get('best-sellers')
   async getBestSellers() {
@@ -58,31 +65,30 @@ export class FlowerController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all books with optional filters' })
+  @ApiOperation({ summary: 'Get all flowers with optional filters' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'authorId', required: false, type: String })
   @ApiQuery({ name: 'categoryId', required: false, type: String })
-  @ApiQuery({ name: 'status', required: false, enum: BookStatus })
-  async getBooks(@Query() query: BookFilterDto) {
-    const result = await this.flowerService.findAllBooks(query);
+  @ApiQuery({ name: 'status', required: false, enum: ['AVAILABLE','OUT_OF_STOCK','DISCONTINUED','DISABLE'] })
+  async getFlowers(@Query() query: any) {
+    const result = await this.flowerService.findAllFlowers(query);
     return {
       totalRecords: result.totalRecords,
       totalPages: result.totalPages,
       currentPage: result.currentPage,
-      books: result.books,
+      flowers: result.flowers,
     };
   }
 
   @Patch(':id/disable')
-  @ApiOperation({ summary: 'Disable a book by ID (soft delete)' })
-  disableBook(@Param('id') id: string) {
-    return this.flowerService.disableBookById(id);
+  @ApiOperation({ summary: 'Disable a flower by ID (soft delete)' })
+  disableFlower(@Param('id') id: string) {
+    return this.flowerService.disableFlowerById(id);
   }
 
-  @Post('create-book')
+  @Post('create-flower')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Upload image and create book' })
+  @ApiOperation({ summary: 'Upload image and create flower' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -91,11 +97,6 @@ export class FlowerController {
         title: { type: 'string' },
         description: { type: 'string' },
         price: { type: 'number' },
-        publishedAt: { type: 'string', format: 'date-time' },
-        authorIds: {
-          type: 'array',
-          items: { type: 'string' },
-        },
         categoryIds: {
           type: 'array',
           items: { type: 'string' },
@@ -119,17 +120,21 @@ export class FlowerController {
       }),
     }),
   )
-  async uploadBookImage(
+
+  async uploadFlowerImage(
     @UploadedFile() file: Express.Multer.File,
     @Body() body: any,
   ) {
-    const imagePath = `/uploads/books/${file.filename}`;
-    return this.flowerService.createBookWithImage(body, imagePath);
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+    const imagePath = `/uploads/flowers/${file.filename}`;
+    return this.flowerService.createFlowerWithImage(body, imagePath);
   }
 
-  @Patch(':id/update-book')
+  @Patch(':id/update')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update book with optional image' })
+  @ApiOperation({ summary: 'Update flower with optional image' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -138,11 +143,6 @@ export class FlowerController {
         title: { type: 'string' },
         description: { type: 'string' },
         price: { type: 'number' },
-        publishedAt: { type: 'string', format: 'date-time' },
-        authorIds: {
-          type: 'array',
-          items: { type: 'string' },
-        },
         categoryIds: {
           type: 'array',
           items: { type: 'string' },
@@ -166,13 +166,13 @@ export class FlowerController {
       }),
     }),
   )
-  async updateBookWithImage(
+  async updateFlowerWithImage(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() body: any,
   ) {
-    const imagePath = file ? `/uploads/books/${file.filename}` : null;
-    return this.flowerService.updateBookWithImage(id, body, imagePath);
+    const imagePath = file ? `/uploads/flowers/${file.filename}` : null;
+    return this.flowerService.updateFlowerWithImage(id, body, imagePath);
   }
   @Patch(':id/stock')
   @HttpCode(HttpStatus.OK)

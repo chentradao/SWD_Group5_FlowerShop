@@ -1,8 +1,8 @@
 import React from 'react';
-import BookForm from '../../components/BookForm';
+import FlowerForm from '../../components/FlowerForm';
 
 const AddNewBookPage = () => {
-    return <BookForm />;
+    return <FlowerForm />;
 };
 
 export default AddNewBookPage;

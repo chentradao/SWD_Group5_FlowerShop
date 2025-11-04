@@ -3,9 +3,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
+import { ShopModule } from './modules/shop/shop.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/user/user.module';
-import { BookModule } from './modules/book/book.module';
 import { FlowerModule } from './modules/flower/flower.module';
 import { AuthorModule } from './modules/author/author.module';
 import { CategoryModule } from './modules/category/category.module';
@@ -23,10 +23,11 @@ import { ProvincesModule } from './modules/province/provinces.module';
     isGlobal: true,
   }),
     DatabaseModule,
-    AuthModule,
+  AuthModule,
+  // Shop module for multi-vendor support
+  ShopModule,
     UsersModule,
-    BookModule,
-  FlowerModule,
+    FlowerModule,
     AuthorModule,
     CategoryModule,
     WalletModule,

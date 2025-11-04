@@ -1,6 +1,6 @@
-import { IsOptional, IsEnum, IsNumber, IsString } from 'class-validator';
+import { IsOptional, IsNumber, IsString, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BookStatus } from '@prisma/client';
+// Use explicit allowed status values instead of importing BookStatus from Prisma
 
 export class BookFilterDto {
   @IsOptional()
@@ -22,6 +22,7 @@ export class BookFilterDto {
   categoryId?: string;
 
   @IsOptional()
-  @IsEnum(BookStatus, { message: 'status must be a valid BookStatus enum' })
-  status?: BookStatus;
+  @IsString()
+  @IsIn(['AVAILABLE', 'OUT_OF_STOCK', 'DISCONTINUED', 'DISABLE'], { message: 'status must be one of AVAILABLE, OUT_OF_STOCK, DISCONTINUED, DISABLE' })
+  status?: string;
 }

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Select from "react-select";
-import bookService from "../services/bookService";
+import flowerService from "../services/flowerService";
 import authorService from "../services/authorServices";
 import categoryService from "../services/categoryService";
 import { useAuth } from "../contexts/AuthContext";
 
-export default function BookForm({ isEdit = false }) {
+export default function FlowerForm({ isEdit = false }) {
   const { id } = useParams(); // <-- lấy id từ URL
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -14,7 +14,6 @@ export default function BookForm({ isEdit = false }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [publishedAt, setPublishedAt] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -24,7 +23,7 @@ export default function BookForm({ isEdit = false }) {
   const [selectedAuthors, setSelectedAuthors] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
 
-  // Fetch authors, categories, and book (if edit)
+  // Fetch authors, categories, and flower (if edit)
   useEffect(() => {
     authorService
       .getAuthors()
@@ -37,33 +36,32 @@ export default function BookForm({ isEdit = false }) {
       .catch((err) => console.error("Error fetching categories:", err));
 
     if (isEdit && id) {
-      bookService
+      flowerService
         .getById(id)
         .then((res) => {
-          const book = res.data;
+          const flower = res.data;
           // Kiểm tra quyền chỉnh sửa
-          if (user.role !== 'admin' && book.shopId !== user.shop?.id) {
+          if (user.role !== 'admin' && flower.shopId !== user.shop?.id) {
             alert('Bạn không có quyền chỉnh sửa sản phẩm này!');
             navigate(user.role === 'vendor' ? '/vendor-dashboard/products' : '/');
             return;
           }
-          setTitle(book.title);
-          setDescription(book.description);
-          setPrice(book.price);
-          setPublishedAt(book.publishedAt?.split("T")[0] || "");
-          setImagePreview(book.image); // URL ảnh đã có sẵn
+          setTitle(flower.title);
+          setDescription(flower.description);
+          setPrice(flower.price);
+          setImagePreview(flower.image); // URL ảnh đã có sẵn
 
           // Chuyển dữ liệu về dạng react-select
           setSelectedAuthors(
-            book.authors.map((a) => ({ value: a.id, label: a.name }))
+            flower.authors?.map((a) => ({ value: a.id, label: a.name })) || []
           );
           setSelectedCategories(
-            book.categories.map((c) => ({ value: c.id, label: c.name }))
+            flower.categories?.map((c) => ({ value: c.id, label: c.name })) || []
           );
         })
         .catch((err) => {
-          console.error("Error fetching book:", err);
-          alert("Không tìm thấy sách.");
+          console.error("Error fetching flower:", err);
+          alert("Không tìm thấy sản phẩm.");
         });
     }
   }, [isEdit, id]);
@@ -83,7 +81,6 @@ export default function BookForm({ isEdit = false }) {
     formData.append("title", title);
     formData.append("description", description);
     formData.append("price", price);
-    formData.append("publishedAt", publishedAt);
     if (imageFile) formData.append("image", imageFile);
 
     // Thêm shopId nếu là vendor
@@ -100,16 +97,16 @@ export default function BookForm({ isEdit = false }) {
 
     try {
       if (isEdit) {
-        await bookService.update(id, formData); // cần có hàm update
+        await flowerService.update(id, formData);
       } else {
-        await bookService.create(formData);
+        await flowerService.create(formData);
       }
       // Chuyển hướng dựa vào role
-      const redirectPath = user.role === 'vendor' ? '/vendor-dashboard/products' : '/admin-dashboard/books';
+      const redirectPath = user.role === 'vendor' ? '/vendor-dashboard/products' : '/admin-dashboard/flowers';
       navigate(redirectPath);
     } catch (err) {
-      console.error("Error submitting book:", err);
-      alert(`${isEdit ? "Cập nhật" : "Tạo"} sách thất bại!`);
+      console.error("Error submitting flower:", err);
+      alert(`${isEdit ? "Cập nhật" : "Tạo"} sản phẩm thất bại!`);
     }
   };
 
@@ -122,7 +119,7 @@ export default function BookForm({ isEdit = false }) {
   return (
     <div className="max-w-2xl mx-auto p-4 bg-white shadow-md rounded-md my-10 py-10">
       <h2 className="text-xl font-bold mb-4 text-yellow-600">
-        {isEdit ? "Chỉnh sửa sách" : "Tạo sách mới"}
+        {isEdit ? "Chỉnh sửa sản phẩm" : "Tạo sản phẩm mới"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Các trường giống như trước */}
@@ -159,26 +156,6 @@ export default function BookForm({ isEdit = false }) {
         </div>
 
         <div>
-          <label className="font-medium">Ngày xuất bản</label>
-          <input
-            type="date"
-            className="w-full border rounded p-2"
-            value={publishedAt}
-            onChange={(e) => setPublishedAt(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="font-medium">Tác giả</label>
-          <Select
-            isMulti
-            options={authorOptions}
-            value={selectedAuthors}
-            onChange={setSelectedAuthors}
-          />
-        </div>
-
-        <div>
           <label className="font-medium">Thể loại</label>
           <Select
             isMulti
@@ -189,7 +166,7 @@ export default function BookForm({ isEdit = false }) {
         </div>
 
         <div>
-          <label className="font-medium">Ảnh bìa</label>
+          <label className="font-medium">Ảnh</label>
           <input
             type="file"
             accept="image/*"
@@ -209,7 +186,7 @@ export default function BookForm({ isEdit = false }) {
           type="submit"
           className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
         >
-          {isEdit ? "Cập nhật sách" : "Tạo sách"}
+          {isEdit ? "Cập nhật" : "Tạo"}
         </button>
       </form>
     </div>

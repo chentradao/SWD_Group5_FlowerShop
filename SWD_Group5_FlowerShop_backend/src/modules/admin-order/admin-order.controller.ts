@@ -1,6 +1,5 @@
 import { Controller, Get, Query, Put, Param, BadRequestException } from '@nestjs/common';
 import { AdminOrderService } from './admin-order.service';
-import { OrderStatus } from '@prisma/client';
 
 @Controller('admin/order')
 export class AdminOrderController {

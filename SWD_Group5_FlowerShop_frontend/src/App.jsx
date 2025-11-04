@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 import HomePage from "./pages/public/HomePage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import VendorRoutes from "./pages/VendorRoutes";
 import Authors from "./pages/admin/AuthorManage";
 import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
@@ -24,7 +25,7 @@ import ContactPage from "./pages/public/ContactPage";
 import AdminOrderPage from "./pages/admin/AdminOrderPage";
 import AdminOrderDetailPage from "./pages/admin/AdminOrderDetailPage";
 import RevenuePage from "./pages/admin/RevenuePage";
-import BookDetail from "./pages/public/BookDetail";
+import FlowerDetail from "./pages/public/FlowerDetail";
 import ShopBookPage from "./pages/public/ShopPage";
 import CheckoutPage from "./pages/user/CheckoutPage";
 import ChangePassword from "./pages/user/ChangePassword";
@@ -72,7 +73,8 @@ function App() {
           }
         />
 
-        <Route path="/book/:id" element={<BookDetail />} />
+  <Route path="/book/:id" element={<FlowerDetail />} />
+  <Route path="/flower/:id" element={<FlowerDetail />} />
         <Route
           path="/user/order"
           element={
@@ -93,6 +95,8 @@ function App() {
           }
         />
       
+      {/* Vendor Routes */}
+      {VendorRoutes()}
 
       <Route
         element={

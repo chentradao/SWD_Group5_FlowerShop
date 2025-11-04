@@ -19,6 +19,7 @@ model User {
   cart               CartItem[]
   orders             Order[]
   reviews            Review[]
+  shops              Shop[]
 
   @@map("user")
 }
@@ -63,6 +64,8 @@ model Book {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   status      BookStatus  @default(AVAILABLE)
+  shopId      String?
+  shop        Shop?       @relation(fields: [shopId], references: [id])
   cartItems   CartItem[]
   orderItems  OrderItem[]
   reviews     Review[]
@@ -98,10 +101,12 @@ model OrderItem {
   id       String @id @default(uuid())
   orderId  String
   bookId   String
+  shopId   String?
   quantity Int
   price    Float
   book     Book   @relation(fields: [bookId], references: [id])
   order    Order  @relation(fields: [orderId], references: [id])
+  shop     Shop?  @relation(fields: [shopId], references: [id])
 }
 
 
@@ -128,6 +133,24 @@ model WalletTransaction {
   status    String
   transactionCode    String
   confirmedAt    DateTime  @default(now())
+}
+
+model Shop {
+  id          String   @id @default(uuid())
+  ownerId     String
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id])
+  books Book[]
+  orderItems OrderItem[]
+
+  @@map("shop")
 }
 
 enum TransactionType {
@@ -163,5 +186,6 @@ enum paymentMethod {
 
 enum Role {
   USER
+  VENDOR
   ADMIN
 }
