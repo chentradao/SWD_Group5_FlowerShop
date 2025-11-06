@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc'; // icon Google
+import { useAuth } from '../contexts/AuthContext';
 
 function GoogleLoginSuccess() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setUser } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -29,7 +31,16 @@ function GoogleLoginSuccess() {
       .then(data => {
         localStorage.setItem('user', JSON.stringify(data));
         localStorage.setItem('token', token);
-        navigate('/');
+        setUser(data);
+        // Redirect based on user role
+        const role = data?.role?.toLowerCase();
+        let targetRoute = '/';
+        if (role === 'admin') {
+          targetRoute = '/admin-dashboard';
+        } else if (role === 'vendor') {
+          targetRoute = '/vendor-dashboard/orders';
+        }
+        navigate(targetRoute, { replace: true });
       })
       .catch(err => {
         console.error('Lỗi khi lấy thông tin user:', err);

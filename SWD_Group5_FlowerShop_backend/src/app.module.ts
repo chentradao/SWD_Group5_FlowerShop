@@ -7,7 +7,6 @@ import { ShopModule } from './modules/shop/shop.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/user/user.module';
 import { FlowerModule } from './modules/flower/flower.module';
-import { AuthorModule } from './modules/author/author.module';
 import { CategoryModule } from './modules/category/category.module';
 import { OrderModule} from './modules/order/order.module';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -16,6 +15,7 @@ import { AdminOrderModule } from './modules/admin-order/admin-order.module';
 import { AdminRevenueModule } from './modules/admin-revenue/admin-revenue.module';
 import { CartModule } from './modules/cart/cart.module';
 import { ProvincesModule } from './modules/province/provinces.module';
+import { VendorOrderModule } from './modules/vendor-order/vendor-order.module';
 
 @Module({
   imports: [ScheduleModule.forRoot(),
@@ -28,7 +28,6 @@ import { ProvincesModule } from './modules/province/provinces.module';
   ShopModule,
     UsersModule,
     FlowerModule,
-    AuthorModule,
     CategoryModule,
     WalletModule,
     OrderModule,
@@ -36,6 +35,7 @@ import { ProvincesModule } from './modules/province/provinces.module';
     AdminRevenueModule,
     CartModule,
     ProvincesModule,
+    VendorOrderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

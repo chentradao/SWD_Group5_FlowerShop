@@ -55,9 +55,9 @@ async function main() {
       role: 'VENDOR',
       shops: {
         create: {
-          name: 'Book Paradise',
-          slug: 'book-paradise',
-          description: 'The best bookstore in town',
+          name: 'Flower Paradise',
+          slug: 'flower-paradise',
+          description: 'The best flower shop in town',
           logo: 'https://example.com/logo.png',
         }
       }
@@ -74,54 +74,54 @@ async function main() {
     shop = await prisma.shop.create({
       data: {
         ownerId: vendor.id,
-        name: 'Book Paradise',
-        slug: 'book-paradise',
-        description: 'The best bookstore in town',
+        name: 'Flower Paradise',
+        slug: 'flower-paradise',
+        description: 'The best flower shop in town',
         logo: 'https://example.com/logo.png',
       },
     });
   }
 
-  // Create some authors
-  const author1 = await prisma.author.create({
-    data: {
-      name: 'Jane Doe',
-      bio: 'Best-selling author',
-    }
+  // Create some categories (use upsert to be idempotent)
+  const category1 = await prisma.category.upsert({
+    where: { name: 'Roses' },
+    update: {},
+    create: { name: 'Roses' },
   });
 
-  const author2 = await prisma.author.create({
-    data: {
-      name: 'John Smith',
-      bio: 'Award-winning writer',
-    }
+  const category2 = await prisma.category.upsert({
+    where: { name: 'Tulips' },
+    update: {},
+    create: { name: 'Tulips' },
   });
 
-  // Create some categories
-  const category1 = await prisma.category.create({
-    data: {
-      name: 'Fiction',
-    }
+  // Additional sample categories
+  const category3 = await prisma.category.upsert({
+    where: { name: 'Lilies' },
+    update: {},
+    create: { name: 'Lilies' },
   });
 
-  const category2 = await prisma.category.create({
-    data: {
-      name: 'Non-fiction',
-    }
+  const category4 = await prisma.category.upsert({
+    where: { name: 'Orchids' },
+    update: {},
+    create: { name: 'Orchids' },
   });
 
-  // Create some books for the vendor's shop
-  const book1 = await prisma.book.create({
+  const category5 = await prisma.category.upsert({
+    where: { name: 'Sunflowers' },
+    update: {},
+    create: { name: 'Sunflowers' },
+  });
+
+  // Create some flowers for the vendor's shop
+  const flower1 = await prisma.flower.create({
     data: {
-      title: 'The Great Adventure',
-      description: 'An epic journey through time',
+      title: 'Red Rose Bouquet',
+      description: 'Beautiful red roses perfect for any occasion',
       price: 29.99,
-      image: 'https://example.com/book1.jpg',
-      publishedAt: new Date(),
+      image: 'https://example.com/flower1.jpg',
       shopId: shop.id,
-      authors: {
-        connect: [{ id: author1.id }]
-      },
       categories: {
         connect: [{ id: category1.id }]
       },
@@ -129,17 +129,13 @@ async function main() {
     }
   });
 
-  const book2 = await prisma.book.create({
+  const flower2 = await prisma.flower.create({
     data: {
-      title: 'Business Success',
-      description: 'Guide to business excellence',
+      title: 'Yellow Tulip Bouquet',
+      description: 'Bright yellow tulips to brighten your day',
       price: 39.99,
-      image: 'https://example.com/book2.jpg',
-      publishedAt: new Date(),
+      image: 'https://example.com/flower2.jpg',
       shopId: shop.id,
-      authors: {
-        connect: [{ id: author2.id }]
-      },
       categories: {
         connect: [{ id: category2.id }]
       },

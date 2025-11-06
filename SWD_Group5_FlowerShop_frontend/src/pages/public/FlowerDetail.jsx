@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCart } from "../../contexts/CartContext";
-import flowerService from "../../services/flowerService";
+import flowerService, { getProductImageUrl } from "../../services/flowerService";
 import cartService from "../../services/cartService";
 
 const FlowerDetail = () => {
@@ -54,7 +54,8 @@ const FlowerDetail = () => {
       alert("Đã thêm vào giỏ hàng!");
     } catch (err) {
       console.error("Error adding to cart:", err);
-      alert("Thêm vào giỏ thất bại!");
+      const msg = err?.response?.data?.message || err?.message || 'Thêm vào giỏ thất bại!';
+      alert(msg);
     }
   };
 
@@ -67,11 +68,7 @@ const FlowerDetail = () => {
         {/* Hình ảnh */}
         <div className="w-full md:w-1/3">
           <img
-            src={
-              flower.image
-                ? `${import.meta.env.VITE_API_URL}${flower.image}`
-                : "/placeholder-book.png"
-            }
+            src={getProductImageUrl(flower.image)}
             alt={flower.title || "Không có tiêu đề"}
             className="w-full h-auto rounded-lg shadow border"
           />
@@ -83,20 +80,6 @@ const FlowerDetail = () => {
             {flower.title || "Không có tiêu đề"}
           </h1>
 
-<div className="mt-3 text-gray-700 text-sm flex flex-wrap gap-2">
-  <span className="font-medium">✍ Tác giả:</span>
-  {flower.authors?.length
-    ? flower.authors.map((a, idx) => (
-        <span
-          key={idx}
-          onClick={() => navigate(`/shop?authorId=${a.id}`)}
-          className="cursor-pointer bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-yellow-200 transition"
-        >
-          {a.name}
-        </span>
-      ))
-    : "Không rõ tác giả"}
-</div>
 
 <div className="mt-1 text-gray-700 text-sm flex flex-wrap gap-2">
   <span className="font-medium">📂 Thể loại:</span>

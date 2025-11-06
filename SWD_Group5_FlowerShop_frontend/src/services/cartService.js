@@ -11,10 +11,10 @@ const cartService = {
     }),
 
   // Thêm vào giỏ
-  addToCart: (userId, bookId, quantity = 1) =>
+  addToCart: (userId, flowerId, quantity = 1) =>
     axios.post(
       `${API_URL}/add`,
-      { userId, bookId, quantity },
+      { userId, flowerId, quantity },
       { withCredentials: true } // ✅ đúng vị trí
     ),
 

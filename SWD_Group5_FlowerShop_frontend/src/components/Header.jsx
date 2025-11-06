@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, NavLink  } from "react-router-dom";
 import cartService from "../services/cartService";
+import { getProduct, getProductId, getProductImageUrl, getProductPrice } from "../services/flowerService";
 import { FaShoppingCart, FaBars, FaTimes } from "react-icons/fa";
 
 const Header = () => {
@@ -28,7 +29,8 @@ const Header = () => {
   useEffect(() => {
     if (!user) return;
     cart.forEach((item) => {
-      if (item.book.stock === 0 && item.quantity !== 1) {
+      const product = getProduct(item);
+      if (product && product.stock === 0 && item.quantity !== 1) {
         updateQuantity(item.id, 1);
       }
     });
@@ -74,8 +76,9 @@ const Header = () => {
   const updateQuantity = async (itemId, newQuantity) => {
     if (newQuantity < 1) return;
     const item = cart.find((i) => i.id === itemId);
-    if (!item) return;
-    if (item.book.stock !== 0 && newQuantity > item.book.stock) return;
+  if (!item) return;
+  const product = getProduct(item);
+  if (product && product.stock !== 0 && newQuantity > product.stock) return;
 
     try {
       await cartService.updateQuantity(itemId, user.id, newQuantity);
@@ -92,10 +95,7 @@ const Header = () => {
   const cartCount = cart.length;
   const cartTotal = cart
     .filter((item) => selectedItems.includes(item.id))
-    .reduce(
-      (sum, item) => sum + (item?.book?.price || 0) * (item?.quantity || 0),
-      0
-    );
+    .reduce((sum, item) => sum + getProductPrice(item) * (item?.quantity || 0), 0);
 
   const navigateLogin = () => navigate(`/login`);
   const navigateRegister = () => navigate(`/register`);
@@ -120,15 +120,17 @@ const Header = () => {
     const selectedProducts = cart.filter((item) =>
       selectedItems.includes(item.id)
     );
+    // Ensure all selected products are from the same shop
+    const shopSet = new Set(selectedProducts.map(item => getProduct(item)?.shopId || getProduct(item)?.shop?.id || null));
+    if (shopSet.size > 1) {
+      alert('Vui lòng chỉ chọn sản phẩm từ cùng 1 shop cho mỗi đơn hàng');
+      return;
+    }
     localStorage.setItem("checkout_items", JSON.stringify(selectedProducts));
     navigate(`/checkout`);
   };
 
-  const getImageUrl = (path) => {
-    if (!path) return "/images/no-image.png";
-    if (path.startsWith("http")) return path;
-    return `${import.meta.env.VITE_API_URL}${path}`;
-  };
+  const getImageUrl = (path) => getProductImageUrl(path);
 
   return (
     <header className="bg-[#FFE4B5] shadow-sm text-[#2F2F2F] relative">
@@ -218,49 +220,50 @@ const Header = () => {
                     <>
                       <ul className="space-y-4">
                         {cart.map((item) => {
-                          const outOfStock = item.book.stock === 0;
-                          const tempPrice = item.quantity * (item.book.price || 0);
-                          return (
-                            <li
-                              key={item.id}
-                              className="grid grid-cols-[auto,80px,1fr,auto] gap-4 p-3 bg-gray-50 rounded-lg"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedItems.includes(item.id)}
-                                onChange={() => handleCheckboxChange(item.id)}
-                                disabled={outOfStock}
-                              />
-                              <img
-                                src={getImageUrl(item.book.image)}
-                                alt={item.book.title}
-                                className="w-20 h-20 object-cover rounded-md"
-                              />
-                              <div>
-                                <p className={`${outOfStock ? "line-through opacity-60" : ""}`}>
-                                  {item.book.title}
-                                </p>
-                                {outOfStock ? (
-                                  <p className="text-xs text-red-500">Hết hàng</p>
-                                ) : (
-                                  <>
-                                    <p>Số lượng: {item.quantity}</p>
-                                    <p>Tạm tính: {tempPrice.toLocaleString()}₫</p>
-                                  </>
-                                )}
-                              </div>
-                              <div className="flex flex-col items-end">
-                                <span>{item.book.price.toLocaleString()}₫</span>
-                                <button
-                                  onClick={() => deleteCartItem(item.id)}
-                                  className="text-red-500 text-sm"
-                                >
-                                  Xóa
-                                </button>
-                              </div>
-                            </li>
-                          );
-                        })}
+                            const product = getProduct(item);
+                            const outOfStock = product?.stock === 0;
+                            const tempPrice = item.quantity * (product?.price || 0);
+                            return (
+                              <li
+                                key={item.id}
+                                className="grid grid-cols-[auto,80px,1fr,auto] gap-4 p-3 bg-gray-50 rounded-lg"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedItems.includes(item.id)}
+                                  onChange={() => handleCheckboxChange(item.id)}
+                                  disabled={outOfStock}
+                                />
+                                <img
+                                  src={getImageUrl(product?.image)}
+                                  alt={product?.title}
+                                  className="w-20 h-20 object-cover rounded-md"
+                                />
+                                <div>
+                                  <p className={`${outOfStock ? "line-through opacity-60" : ""}`}>
+                                    {product?.title}
+                                  </p>
+                                  {outOfStock ? (
+                                    <p className="text-xs text-red-500">Hết hàng</p>
+                                  ) : (
+                                    <>
+                                      <p>Số lượng: {item.quantity}</p>
+                                      <p>Tạm tính: {tempPrice.toLocaleString()}₫</p>
+                                    </>
+                                  )}
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <span>{(product?.price || 0).toLocaleString()}₫</span>
+                                  <button
+                                    onClick={() => deleteCartItem(item.id)}
+                                    className="text-red-500 text-sm"
+                                  >
+                                    Xóa
+                                  </button>
+                                </div>
+                              </li>
+                            );
+                          })}
                       </ul>
                       <div className="mt-4 border-t pt-4">
                         <p className="flex justify-between font-bold text-lg">

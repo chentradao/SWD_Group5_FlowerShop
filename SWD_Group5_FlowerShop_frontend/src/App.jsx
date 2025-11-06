@@ -3,14 +3,10 @@ import "./App.css";
 import HomePage from "./pages/public/HomePage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import VendorRoutes from "./pages/VendorRoutes";
-import Authors from "./pages/admin/AuthorManage";
 import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
 import GoogleLoginSuccess from "./components/GoogleLoginSuccess";
 import ResetPassword from "./pages/public/ResetPassword";
-import ManageBookPage from "./pages/admin/ManageBookPage";
-import AddNewBookPage from "./pages/admin/AddNewBookPage";
-import EditBookPage from "./pages/admin/EditBookPage";
 import UserDetail from "./pages/user/UserDetail";
 import Layout from "./components/Layout";
 import AdminLayout from "./components/AdminLayout";
@@ -106,22 +102,8 @@ function App() {
         }
       >
         <Route path="/admin-dashboard" element={<RevenuePage />} />
-        <Route path="/admin-dashboard/authors" element={<Authors />} />
         <Route path="/admin-dashboard/users" element={<UserManage />} />
-        <Route path="/admin-dashboard/books" element={<ManageBookPage />} />
-        <Route path="/admin-dashboard/books/new" element={<AddNewBookPage />} />
-        <Route path="/admin-dashboard/books/edit/:id" element={<EditBookPage />} />
         <Route path="/admin-dashboard/categories" element={<ManageCategoryPage />} />
-        <Route path="/admin-dashboard/orders" element={<AdminOrderPage />} />
-        <Route path="/admin-dashboard/order/detail/:id" element={<AdminOrderDetailPage />} />
-        <Route
-          path="/admin-dashboard/books/edit/:id"
-          element={<EditBookPage />}
-        />
-        <Route
-          path="/admin-dashboard/categories"
-          element={<ManageCategoryPage />}
-        />
       </Route>
     </Routes>
   );

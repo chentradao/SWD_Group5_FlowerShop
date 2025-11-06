@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Select from "react-select";
 import flowerService from "../services/flowerService";
-import authorService from "../services/authorServices";
 import categoryService from "../services/categoryService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -10,6 +9,7 @@ export default function FlowerForm({ isEdit = false }) {
   const { id } = useParams(); // <-- lấy id từ URL
   const navigate = useNavigate();
   const { user } = useAuth();
+  const role = (user?.role || "").toLowerCase();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -17,19 +17,11 @@ export default function FlowerForm({ isEdit = false }) {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const [authors, setAuthors] = useState([]);
   const [categories, setCategories] = useState([]);
-
-  const [selectedAuthors, setSelectedAuthors] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
 
-  // Fetch authors, categories, and flower (if edit)
+  // Fetch categories, and flower (if edit)
   useEffect(() => {
-    authorService
-      .getAuthors()
-      .then((res) => setAuthors(res ?? []))
-      .catch((err) => console.error("Error fetching authors:", err));
-
     categoryService
       .getCategories()
       .then((res) => setCategories(res ?? []))
@@ -40,10 +32,10 @@ export default function FlowerForm({ isEdit = false }) {
         .getById(id)
         .then((res) => {
           const flower = res.data;
-          // Kiểm tra quyền chỉnh sửa
-          if (user.role !== 'admin' && flower.shopId !== user.shop?.id) {
+          // Kiểm tra quyền chỉnh sửa (case-insensitive role)
+          if (role !== 'admin' && flower.shopId !== user.shop?.id) {
             alert('Bạn không có quyền chỉnh sửa sản phẩm này!');
-            navigate(user.role === 'vendor' ? '/vendor-dashboard/products' : '/');
+            navigate(role === 'vendor' ? '/vendor-dashboard/products' : '/');
             return;
           }
           setTitle(flower.title);
@@ -52,16 +44,13 @@ export default function FlowerForm({ isEdit = false }) {
           setImagePreview(flower.image); // URL ảnh đã có sẵn
 
           // Chuyển dữ liệu về dạng react-select
-          setSelectedAuthors(
-            flower.authors?.map((a) => ({ value: a.id, label: a.name })) || []
-          );
           setSelectedCategories(
-            flower.categories?.map((c) => ({ value: c.id, label: c.name })) || []
+            flower.categories.map((c) => ({ value: c.id, label: c.name }))
           );
         })
         .catch((err) => {
           console.error("Error fetching flower:", err);
-          alert("Không tìm thấy sản phẩm.");
+          alert("Không tìm thấy hoa.");
         });
     }
   }, [isEdit, id]);
@@ -83,14 +72,11 @@ export default function FlowerForm({ isEdit = false }) {
     formData.append("price", price);
     if (imageFile) formData.append("image", imageFile);
 
-    // Thêm shopId nếu là vendor
-    if (user.role === 'vendor') {
+    // Thêm shopId nếu là vendor (case-insensitive role)
+    if (role === 'vendor') {
       formData.append("shopId", user.shop.id);
     }
 
-    selectedAuthors.forEach((author) =>
-      formData.append("authorIds", author.value)
-    );
     selectedCategories.forEach((cat) =>
       formData.append("categoryIds", cat.value)
     );
@@ -101,16 +87,15 @@ export default function FlowerForm({ isEdit = false }) {
       } else {
         await flowerService.create(formData);
       }
-      // Chuyển hướng dựa vào role
-      const redirectPath = user.role === 'vendor' ? '/vendor-dashboard/products' : '/admin-dashboard/flowers';
+  // Chuyển hướng dựa vào role (case-insensitive)
+  const redirectPath = role === 'vendor' ? '/vendor-dashboard/products' : '/admin-dashboard/flowers';
       navigate(redirectPath);
     } catch (err) {
       console.error("Error submitting flower:", err);
-      alert(`${isEdit ? "Cập nhật" : "Tạo"} sản phẩm thất bại!`);
+      alert(`${isEdit ? "Cập nhật" : "Tạo"} hoa thất bại!`);
     }
   };
 
-  const authorOptions = authors.map((a) => ({ value: a.id, label: a.name }));
   const categoryOptions = categories.map((c) => ({
     value: c.id,
     label: c.name,
@@ -119,12 +104,12 @@ export default function FlowerForm({ isEdit = false }) {
   return (
     <div className="max-w-2xl mx-auto p-4 bg-white shadow-md rounded-md my-10 py-10">
       <h2 className="text-xl font-bold mb-4 text-yellow-600">
-        {isEdit ? "Chỉnh sửa sản phẩm" : "Tạo sản phẩm mới"}
+        {isEdit ? "Chỉnh sửa hoa" : "Tạo hoa mới"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Các trường giống như trước */}
         <div>
-          <label className="font-medium">Tiêu đề</label>
+          <label className="font-medium">Tên hoa</label>
           <input
             type="text"
             className="w-full border rounded p-2"
@@ -156,7 +141,7 @@ export default function FlowerForm({ isEdit = false }) {
         </div>
 
         <div>
-          <label className="font-medium">Thể loại</label>
+          <label className="font-medium">Danh mục</label>
           <Select
             isMulti
             options={categoryOptions}
@@ -186,7 +171,7 @@ export default function FlowerForm({ isEdit = false }) {
           type="submit"
           className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
         >
-          {isEdit ? "Cập nhật" : "Tạo"}
+          {isEdit ? "Cập nhật hoa" : "Tạo hoa"}
         </button>
       </form>
     </div>

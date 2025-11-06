@@ -1,6 +1,6 @@
 import { IsString, IsNumber, IsArray, IsOptional } from 'class-validator';
 
-export class CreateBookDto {
+export class CreateFlowerDto {
   @IsString()
   title: string;
 
@@ -12,12 +12,6 @@ export class CreateBookDto {
 
   @IsNumber()
   price: number;
-
-  @IsOptional()
-  publishedAt?: Date;
-
-  @IsArray()
-  authorIds: string[] | string; // danh sách ID tác giả
 
   @IsArray()
   categoryIds: string[] | string; // danh sách ID thể loại

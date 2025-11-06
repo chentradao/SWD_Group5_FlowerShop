@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import flowerService from '../../services/flowerService';
+import flowerService, { getProductImageUrl } from '../../services/flowerService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const VendorProductsPage = () => {
@@ -11,8 +11,15 @@ const VendorProductsPage = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-  const response = await flowerService.getByShopId(user.shop.id);
-        setProducts(response.data || []);
+  // resolve shopId robustly: some user objects may have shop, shopId or shops[0]
+  const shopId = user?.shop?.id || user?.shopId || (user?.shops && user.shops[0]?.id);
+  if (!shopId) {
+    console.debug('VendorProductsPage: no shopId on user', user);
+    setProducts([]);
+    return;
+  }
+  const response = await flowerService.getByShopId(shopId);
+        setProducts(Array.isArray(response.data) ? response.data : response.data?.flowers || []);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -21,7 +28,7 @@ const VendorProductsPage = () => {
     };
 
     fetchProducts();
-  }, [user.shop.id]);
+  }, [user]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -30,7 +37,7 @@ const VendorProductsPage = () => {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Sản phẩm của Shop</h2>
+        <h2 className="text-2xl font-bold">Sản phẩm của Vendor</h2>
         <Link
           to="/vendor-dashboard/products/new"
           className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
@@ -43,12 +50,12 @@ const VendorProductsPage = () => {
         {products.map((product) => (
           <div key={product.id} className="border rounded-lg p-4 bg-white shadow-sm">
             <img
-              src={product.image}
-              alt={product.title}
+              src={getProductImageUrl(product.image)}
+              alt={product.title || product.name || 'product'}
               className="w-full h-48 object-cover rounded-lg mb-4"
             />
             <h3 className="font-semibold text-lg mb-2">{product.title}</h3>
-            <p className="text-gray-600 mb-2">{product.price.toLocaleString('vi-VN')} VNĐ</p>
+            <p className="text-gray-600 mb-2">{(product.price ?? product.amount ?? 0).toLocaleString('vi-VN')} VNĐ</p>
             <div className="flex justify-end space-x-2">
               <Link
                 to={`/vendor-dashboard/products/edit/${product.id}`}

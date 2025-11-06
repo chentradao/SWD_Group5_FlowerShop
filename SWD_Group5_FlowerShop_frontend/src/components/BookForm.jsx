@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Select from "react-select";
-import bookService from "../services/bookService";
-import authorService from "../services/authorServices";
+import flowerService from "../services/flowerService";
 import categoryService from "../services/categoryService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -10,6 +9,7 @@ export default function BookForm({ isEdit = false }) {
   const { id } = useParams(); // <-- lấy id từ URL
   const navigate = useNavigate();
   const { user } = useAuth();
+  const role = (user?.role || "").toLowerCase();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -18,18 +18,12 @@ export default function BookForm({ isEdit = false }) {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const [authors, setAuthors] = useState([]);
   const [categories, setCategories] = useState([]);
-
-  const [selectedAuthors, setSelectedAuthors] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
 
   // Fetch authors, categories, and book (if edit)
   useEffect(() => {
-    authorService
-      .getAuthors()
-      .then((res) => setAuthors(res ?? []))
-      .catch((err) => console.error("Error fetching authors:", err));
+    // authors removed — no-op
 
     categoryService
       .getCategories()
@@ -37,14 +31,14 @@ export default function BookForm({ isEdit = false }) {
       .catch((err) => console.error("Error fetching categories:", err));
 
     if (isEdit && id) {
-      bookService
+      flowerService
         .getById(id)
         .then((res) => {
           const book = res.data;
-          // Kiểm tra quyền chỉnh sửa
-          if (user.role !== 'admin' && book.shopId !== user.shop?.id) {
+          // Kiểm tra quyền chỉnh sửa (case-insensitive role)
+          if (role !== 'admin' && book.shopId !== user.shop?.id) {
             alert('Bạn không có quyền chỉnh sửa sản phẩm này!');
-            navigate(user.role === 'vendor' ? '/vendor-dashboard/products' : '/');
+            navigate(role === 'vendor' ? '/vendor-dashboard/products' : '/');
             return;
           }
           setTitle(book.title);
@@ -53,17 +47,14 @@ export default function BookForm({ isEdit = false }) {
           setPublishedAt(book.publishedAt?.split("T")[0] || "");
           setImagePreview(book.image); // URL ảnh đã có sẵn
 
-          // Chuyển dữ liệu về dạng react-select
-          setSelectedAuthors(
-            book.authors.map((a) => ({ value: a.id, label: a.name }))
-          );
+          // categories
           setSelectedCategories(
-            book.categories.map((c) => ({ value: c.id, label: c.name }))
+            (book.categories || []).map((c) => ({ value: c.id, label: c.name }))
           );
         })
         .catch((err) => {
-          console.error("Error fetching book:", err);
-          alert("Không tìm thấy sách.");
+          console.error("Error fetching product:", err);
+          alert("Không tìm thấy sản phẩm.");
         });
     }
   }, [isEdit, id]);
@@ -86,26 +77,23 @@ export default function BookForm({ isEdit = false }) {
     formData.append("publishedAt", publishedAt);
     if (imageFile) formData.append("image", imageFile);
 
-    // Thêm shopId nếu là vendor
-    if (user.role === 'vendor') {
+    // Thêm shopId nếu là vendor (case-insensitive role)
+    if (role === 'vendor') {
       formData.append("shopId", user.shop.id);
     }
 
-    selectedAuthors.forEach((author) =>
-      formData.append("authorIds", author.value)
-    );
     selectedCategories.forEach((cat) =>
       formData.append("categoryIds", cat.value)
     );
 
     try {
       if (isEdit) {
-        await bookService.update(id, formData); // cần có hàm update
+        await flowerService.update(id, formData);
       } else {
-        await bookService.create(formData);
+        await flowerService.create(formData);
       }
-      // Chuyển hướng dựa vào role
-      const redirectPath = user.role === 'vendor' ? '/vendor-dashboard/products' : '/admin-dashboard/books';
+  // Chuyển hướng dựa vào role (case-insensitive)
+  const redirectPath = role === 'vendor' ? '/vendor-dashboard/products' : '/admin-dashboard/books';
       navigate(redirectPath);
     } catch (err) {
       console.error("Error submitting book:", err);
@@ -113,7 +101,6 @@ export default function BookForm({ isEdit = false }) {
     }
   };
 
-  const authorOptions = authors.map((a) => ({ value: a.id, label: a.name }));
   const categoryOptions = categories.map((c) => ({
     value: c.id,
     label: c.name,
@@ -165,16 +152,6 @@ export default function BookForm({ isEdit = false }) {
             className="w-full border rounded p-2"
             value={publishedAt}
             onChange={(e) => setPublishedAt(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="font-medium">Tác giả</label>
-          <Select
-            isMulti
-            options={authorOptions}
-            value={selectedAuthors}
-            onChange={setSelectedAuthors}
           />
         </div>
 

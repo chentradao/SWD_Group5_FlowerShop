@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import bookService from "../../services/bookService";
+import flowerService from "../../services/flowerService";
 import {
   PencilSquareIcon,
   XCircleIcon,
@@ -9,35 +9,48 @@ import {
 } from "@heroicons/react/24/solid";
 import Swal from "sweetalert2";
 
-const ManageBookPage = () => {
-  const [books, setBooks] = useState([]);
+const ManageBookPage = ({ vendorMode = false }) => {
+  const [flowers, setFlowers] = useState([]);
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBook, setSelectedBook] = useState(null);
+  const [selectedFlower, setSelectedFlower] = useState(null);
   const [addQuantity, setAddQuantity] = useState(0);
 
   const navigate = useNavigate();
 
-  const fetchBooks = async () => {
+  const fetchFlowers = async () => {
     try {
-      const res = await bookService.getAll();
-      let data = res.data.books;
+      let data = [];
+      if (vendorMode) {
+        const cached = localStorage.getItem('user');
+        const user = cached ? JSON.parse(cached) : null;
+        if (!user?.shop?.id) {
+          setFlowers([]);
+          return;
+        }
+        const res = await flowerService.getByShopId(user.shop.id);
+        data = res.data || [];
+      } else {
+        const res = await flowerService.getAll();
+        data = res.data.flowers || [];
+      }
+
       if (search.trim()) {
-        data = data.filter((book) =>
-          book.title.toLowerCase().includes(search.toLowerCase())
+        data = data.filter((flower) =>
+          flower.title.toLowerCase().includes(search.toLowerCase())
         );
       }
-      setBooks(data);
+      setFlowers(data);
     } catch (err) {
-      console.error("Error fetching books:", err);
-      setBooks([]);
+      console.error("Error fetching flowers:", err);
+      setFlowers([]);
     }
   };
 
   const handleDisable = async (id) => {
     const result = await Swal.fire({
       title: "Bạn có chắc chắn?",
-      text: "Sách này sẽ bị vô hiệu hóa!",
+      text: "Hoa này sẽ bị vô hiệu hóa!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Vâng, vô hiệu hóa!",
@@ -45,27 +58,27 @@ const ManageBookPage = () => {
 
     if (result.isConfirmed) {
       try {
-        await bookService.disable(id);
-        fetchBooks();
-        Swal.fire("Đã vô hiệu hóa!", "Sách đã được vô hiệu hóa.", "success");
+        await flowerService.disable(id);
+        fetchFlowers();
+        Swal.fire("Đã vô hiệu hóa!", "Hoa đã được vô hiệu hóa.", "success");
       } catch (err) {
-        Swal.fire("Lỗi", "Không thể vô hiệu hóa sách.", "error");
+        Swal.fire("Lỗi", "Không thể vô hiệu hóa hoa.", "error");
       }
     }
   };
 
-  const openAddStockModal = (book) => {
-    setSelectedBook(book);
+  const openAddStockModal = (flower) => {
+    setSelectedFlower(flower);
     setAddQuantity(0);
     setIsModalOpen(true);
   };
 
   const handleAddStock = async () => {
     try {
-      const newStock = selectedBook.stock + addQuantity;
-      await bookService.updateStock(selectedBook.id, newStock);
+      const newStock = selectedFlower.stock + addQuantity;
+      await flowerService.updateStock(selectedFlower.id, newStock);
       Swal.fire("Thành công", "Cập nhật tồn kho thành công!", "success");
-      fetchBooks();
+      fetchFlowers();
       setIsModalOpen(false);
     } catch (err) {
       Swal.fire("Lỗi", "Không thể cập nhật tồn kho", "error");
@@ -73,18 +86,18 @@ const ManageBookPage = () => {
   };
 
   useEffect(() => {
-    fetchBooks();
+    fetchFlowers();
   }, [search]);
 
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">📚 Quản lý sách</h1>
+        <h1 className="text-2xl font-bold">🌸 Quản lý hoa</h1>
         <button
-          onClick={() => navigate("/admin-dashboard/books/new")}
+          onClick={() => navigate(vendorMode ? "/vendor-dashboard/products/new" : "/admin-dashboard/flowers/new")}
           className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg"
         >
-          <PlusIcon className="w-5 h-5" /> Thêm sách
+          <PlusIcon className="w-5 h-5" /> Thêm hoa
         </button>
       </div>
 
@@ -92,7 +105,7 @@ const ManageBookPage = () => {
       <div className="mb-4">
         <input
           type="text"
-          placeholder="Tìm kiếm theo tiêu đề sách..."
+          placeholder="Tìm kiếm theo tên hoa..."
           className="border px-4 py-2 w-full rounded-lg"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -105,7 +118,7 @@ const ManageBookPage = () => {
           <thead>
             <tr className="bg-gray-100 text-gray-700">
               <th className="px-4 py-2 text-left">Hình ảnh</th>
-              <th className="px-4 py-2 text-left">Tiêu đề</th>
+              <th className="px-4 py-2 text-left">Tên hoa</th>
               <th className="px-4 py-2">Giá</th>
               <th className="px-4 py-2">Tồn kho</th>
               <th className="px-4 py-2">Đã bán</th>
@@ -113,20 +126,20 @@ const ManageBookPage = () => {
             </tr>
           </thead>
           <tbody>
-            {books.length === 0 ? (
+            {flowers.length === 0 ? (
               <tr>
                 <td colSpan="5" className="text-center py-4 text-gray-500">
-                  Không tìm thấy sách nào.
+                  Không tìm thấy hoa nào.
                 </td>
               </tr>
             ) : (
-              books.map((book) => (
-                <tr key={book.id} className="border-t">
+              flowers.map((flower) => (
+                <tr key={flower.id} className="border-t">
                   <td className="px-4 py-2">
-                    {book.image ? (
+                    {flower.image ? (
                       <img
-                        src={`${import.meta.env.VITE_API_URL}${book.image}`}
-                        alt={book.title}
+                        src={`${import.meta.env.VITE_API_URL}${flower.image}`}
+                        alt={flower.title}
                         className="h-12 w-12 object-cover rounded"
                       />
                     ) : (
@@ -135,35 +148,35 @@ const ManageBookPage = () => {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-2">{book.title}</td>
+                  <td className="px-4 py-2">{flower.title}</td>
                   <td className="px-4 py-2">
-                    {Number(book.price).toLocaleString()} đ
+                    {Number(flower.price).toLocaleString()} đ
                   </td>
-                  <td className="px-4 py-2 text-center">{book.stock || 0}</td>
-                  <td className="px-4 py-2 text-center">{book.sold || 0}</td>
-                  <td className="px-4 py-2 flex justify-center gap-3">
+                  <td className="px-4 py-2 text-center">{flower.stock || 0}</td>
+                  <td className="px-4 py-2 text-center">{flower.sold || 0}</td>
+                    <td className="px-4 py-2 flex justify-center gap-3">
                     <button
                       onClick={() =>
-                        navigate(`/admin-dashboard/books/edit/${book.id}`)
+                        navigate(vendorMode ? `/vendor-dashboard/products/edit/${flower.id}` : `/admin-dashboard/flowers/edit/${flower.id}`)
                       }
                       className="text-blue-600 hover:text-blue-800"
                     >
                       <PencilSquareIcon className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => handleDisable(book.id)}
+                      onClick={() => handleDisable(flower.id)}
                       className="text-red-600 hover:text-red-800"
                     >
                       <XCircleIcon className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => navigate(`/book/${book.id}`)}
+                      onClick={() => navigate(`/flower/${flower.id}`)}
                       className="text-gray-600 hover:text-gray-800"
                     >
                       <EyeIcon className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => openAddStockModal(book)}
+                      onClick={() => openAddStockModal(flower)}
                       className="text-green-600 hover:text-green-800"
                     >
                       <PlusIcon className="w-5 h-5" />

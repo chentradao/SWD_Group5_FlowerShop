@@ -20,13 +20,13 @@ export class CartController {
 
   @Post('add')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Add book to cart' })
+  @ApiOperation({ summary: 'Add flower to cart' })
   addToCart(
     @Body('userId') userId: string,
-    @Body('bookId') bookId: string,
+    @Body('flowerId') flowerId: string,
     @Body('quantity') quantity: number,
   ) {
-    return this.cartService.addToCart(userId, bookId, quantity);
+    return this.cartService.addToCart(userId, flowerId, quantity);
   }
 
   @Get()

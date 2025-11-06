@@ -2,9 +2,6 @@ import React from 'react';
 import Footer from '../../components/Footer';
 import Header from '../../components/Header';
 import CategoriesSection from '../../components/CategoriesSection';
-import PopularBooksSection from '../../components/PopularBooksSection';
-import NewsletterSection from '../../components/NewsletterSection';
-import NewArrivalsSection from '../../components/NewArrivalsSection';
 import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
@@ -20,7 +17,7 @@ const HomePage = () => {
             <section className="bg-[#F3C469] px-4 sm:px-6 md:px-10 py-10 md:py-16 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="md:w-1/2 text-center md:text-left">
                     <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-wide mb-2">
-                        KHÁM PHÁ CUỐN SÁCH TIẾP THEO CỦA BẠN
+                        BÓ HOA THAY LỜI MUỐN NÓI
                     </h1>
                     <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-6">
                         YÊU THÍCH NHẤT
@@ -41,11 +38,6 @@ const HomePage = () => {
 
             <CategoriesSection />
 
-            <NewArrivalsSection />
-
-            <PopularBooksSection />
-
-            <NewsletterSection />
         </div>
     );
 };

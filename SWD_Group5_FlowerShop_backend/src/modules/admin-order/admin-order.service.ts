@@ -11,7 +11,7 @@ export class AdminOrderService {
       orderBy: { createdAt: 'desc' },
       include: {
         user: true,
-        items: { include: { book: true } },
+        items: { include: { flower: true } },
       },
     };
 
@@ -40,12 +40,12 @@ export class AdminOrderService {
 
   async approveOrder(orderId: string) {
     return this.prisma.$transaction(async (tx) => {
-      // Lấy order + items + book
+      // Lấy order + items + flower
       const order = await tx.order.findUnique({
         where: { id: orderId },
         include: {
           items: {
-            include: { book: true },
+            include: { flower: true },
           },
         },
       });
@@ -60,17 +60,17 @@ export class AdminOrderService {
 
       // Kiểm tra tồn kho trước khi duyệt
       for (const item of order.items) {
-        if (item.book.stock < item.quantity) {
+        if (item.flower.stock < item.quantity) {
           throw new BadRequestException(
-            `Sách "${item.book.title}" không đủ tồn kho. Còn ${item.book.stock}, cần ${item.quantity}`
+            `Hoa "${item.flower.title}" không đủ tồn kho. Còn ${item.flower.stock}, cần ${item.quantity}`
           );
         }
       }
 
       // Trừ stock và cộng sold
       for (const item of order.items) {
-        await tx.book.update({
-          where: { id: item.bookId },
+        await tx.flower.update({
+          where: { id: item.flowerId },
           data: {
             stock: { decrement: item.quantity },
             sold: { increment: item.quantity },
@@ -84,7 +84,7 @@ export class AdminOrderService {
         data: { status: OrderStatus.CONFIRMED },
         include: {
           user: true,
-          items: { include: { book: true } },
+          items: { include: { flower: true } },
         },
       });
     });
@@ -111,7 +111,7 @@ export class AdminOrderService {
       data: { status: OrderStatus.SHIPPING },
       include: {
         user: true,
-        items: { include: { book: true } },
+        items: { include: { flower: true } },
       },
     });
   }
@@ -123,7 +123,7 @@ export class AdminOrderService {
         user: true, // Lấy thông tin user
         items: {
           include: {
-            book: true, // Lấy thông tin book của từng item
+            flower: true, // Lấy thông tin flower của từng item
           },
         },
       },

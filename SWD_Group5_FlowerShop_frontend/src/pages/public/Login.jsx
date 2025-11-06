@@ -45,12 +45,33 @@ const Login = () => {
 
     try {
       const res = await axios.post("/auth/login", form);
-      const user = res.data.data.user;
+      const user = res.data?.data?.user || res.data?.user || res.data;
+      // Try to extract token from multiple possible response shapes
+      const token = res.data?.data?.token || res.data?.data?.access_token || res.data?.access_token || res.data?.token;
 
-      localStorage.setItem("user", JSON.stringify(user));
+      // Persist token (so axios interceptor / helpers can use it)
+      if (token) {
+        try {
+          axios.setAuthToken?.(token);
+        } catch (e) {
+          // ignore if method not present
+        }
+        try { localStorage.setItem('auth_token', token); } catch (e) { /* ignore */ }
+      }
+
+      // Persist user and update context
+      try { localStorage.setItem("user", JSON.stringify(user)); } catch (e) { /* ignore */ }
       setUser(user);
 
-      navigate("/", { replace: true });
+      // Redirect based on user role
+      const role = user?.role?.toLowerCase();
+      let targetRoute = '/';
+      if (role === 'admin') {
+        targetRoute = '/admin-dashboard';
+      } else if (role === 'vendor') {
+        targetRoute = '/vendor-dashboard/orders';
+      }
+      navigate(targetRoute, { replace: true });
     } catch (err) {
       console.error(err);
       setError("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");

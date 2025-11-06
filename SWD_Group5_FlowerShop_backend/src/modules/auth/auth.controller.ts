@@ -5,6 +5,7 @@ import { UsersService } from '../user/user.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from './jwt-auth.guard';
 import { VerifyResetOtpDto } from '../mail/verifyresetotp.dto';
 import { ApiSuccessResponse, ApiErrorResponse } from '../../common/dto/api-response.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -40,7 +41,8 @@ export class AuthController {
 
     res.cookie('token', result.access_token, {
       httpOnly: true,
-      secure: true,
+      // Only set secure flag in production so cookie is sent on localhost during development
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
@@ -77,7 +79,7 @@ export class AuthController {
     console.log(result);
     res.cookie('token', result.access_token, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
@@ -109,7 +111,7 @@ logout(@Res({ passthrough: true }) res: Response) {
   res.clearCookie('token', {
     path: '/',
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
   });
   return { message: 'Logged out' };
@@ -119,6 +121,14 @@ logout(@Res({ passthrough: true }) res: Response) {
 async changePassword(@Body() body: { userId: string; currentPassword: string; newPassword: string }) {
   return this.authService.changePassword(body.userId, body.currentPassword, body.newPassword);
 }
+
+  // Debug helper: return the currently authenticated user (works with cookie or Authorization header)
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async me(@Req() req: any) {
+    const user = req.user;
+    return { authenticated: true, user };
+  }
 
 
 

@@ -14,9 +14,15 @@ const RoleBasedHome = () => {
   });
 
   useEffect(() => {
-    if (!isLoading && user?.role?.toLowerCase() === 'admin') {
-      navigate('/admin-dashboard/', { replace: true });
-      setRedirected(true);
+    if (!isLoading && user?.role) {
+      const role = user.role.toLowerCase();
+      if (role === 'admin') {
+        navigate('/admin-dashboard', { replace: true });
+        setRedirected(true);
+      } else if (role === 'vendor') {
+        navigate('/vendor-dashboard/orders', { replace: true });
+        setRedirected(true);
+      }
     }
   }, [user, isLoading, navigate]);
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -6,8 +6,30 @@ import { Prisma } from '@prisma/client';
 export class FlowerService {
   constructor(private prisma: PrismaService) { }
 
+  async getVendorShop(user: any) {
+    return this.prisma.shop.findFirst({
+      where: { ownerId: user.id || user.userId },
+    });
+  }
+
+  async verifyVendorOwnership(flowerId: string, user: any) {
+    const flower = await this.prisma.flower.findUnique({
+      where: { id: flowerId },
+      include: { shop: true }
+    });
+
+    if (!flower) {
+      throw new NotFoundException('Flower not found');
+    }
+
+    const shop = await this.getVendorShop(user);
+    if (!shop || shop.id !== flower.shopId) {
+      throw new BadRequestException('You do not have permission to update this flower');
+    }
+  }
+
   async getByShopId(shopId: string) {
-    const flowers = await this.prisma.book.findMany({
+    const flowers = await this.prisma.flower.findMany({
       where: {
         shopId,
         status: 'AVAILABLE'
@@ -20,7 +42,7 @@ export class FlowerService {
     return flowers;
   }
 
-  async createFlowerWithImage(body: any, imagePath: string) {
+  async createFlowerWithImage(body: any, imagePath: string, shopId: string) {
     const { title, description, price, categoryIds } = body;
 
     const normalizedCategoryIds = Array.isArray(categoryIds)
@@ -29,13 +51,16 @@ export class FlowerService {
         ? [categoryIds]
         : [];
 
-    return this.prisma.book.create({
+    return this.prisma.flower.create({
       data: {
         title,
         image: imagePath,
         description,
         price: Number(price),
-        ...(body.shopId && { shopId: body.shopId }),
+        shopId, // Always include vendor's shop
+        status: 'AVAILABLE',
+        stock: 0, // Initial stock
+        sold: 0, // Initial sales
         categories: {
           connect: normalizedCategoryIds.map((id: string) => ({ id })),
         },
@@ -48,14 +73,14 @@ export class FlowerService {
   }
 
   async disableFlowerById(flowerId: string) {
-    return this.prisma.book.update({
+    return this.prisma.flower.update({
       where: { id: flowerId },
       data: { status: 'DISABLE' },
     });
   }
 
   async getById(id: string) {
-    const flower = await this.prisma.book.findUnique({
+    const flower = await this.prisma.flower.findUnique({
       where: { id },
       include: {
         categories: true,
@@ -71,7 +96,7 @@ export class FlowerService {
   }
 
   async updateFlowerWithImage(id: string, body: any, imagePath: string | null) {
-    const existingFlower = await this.prisma.book.findUnique({ where: { id } });
+    const existingFlower = await this.prisma.flower.findUnique({ where: { id } });
     if (!existingFlower) {
       throw new NotFoundException(`Flower with ID ${id} not found`);
     }
@@ -84,7 +109,7 @@ export class FlowerService {
         ? [categoryIds]
         : [];
 
-    return this.prisma.book.update({
+    return this.prisma.flower.update({
       where: { id },
       data: {
         ...(title && { title }),
@@ -105,9 +130,12 @@ export class FlowerService {
   }
 
   async findAllFlowers(query: any) {
-    const { page = 1, limit = 10, categoryId, status } = query;
+    // query params come as strings from HTTP requests — normalize to numbers
+    const page = query?.page ? Number(query.page) : 1;
+    const limit = query?.limit ? Number(query.limit) : 10;
+    const { categoryId, status } = query;
 
-    const totalRecords = await this.prisma.book.count({
+    const totalRecords = await this.prisma.flower.count({
       where: {
         ...(status && { status: status as any }),
         ...(categoryId && {
@@ -118,7 +146,7 @@ export class FlowerService {
       },
     });
 
-    const flowers = await this.prisma.book.findMany({
+    const flowers = await this.prisma.flower.findMany({
       where: {
         ...(status && { status: status as any }),
         ...(categoryId && {
@@ -132,10 +160,10 @@ export class FlowerService {
         shop: true
       },
       skip: (page - 1) * limit,
-      take: limit,
+      take: Math.max(1, limit),
     });
 
-    const totalPages = Math.ceil(totalRecords / limit);
+  const totalPages = Math.ceil(totalRecords / limit);
 
     return {
       totalRecords,
@@ -145,7 +173,7 @@ export class FlowerService {
     };
   }
   async updateStock(id: string, stock: number) {
-    const flower = await this.prisma.book.findUnique({
+    const flower = await this.prisma.flower.findUnique({
       where: { id },
     });
 
@@ -153,14 +181,14 @@ export class FlowerService {
       throw new NotFoundException('Không tìm thấy hoa');
     }
 
-    return this.prisma.book.update({
+    return this.prisma.flower.update({
       where: { id },
       data: { stock },
     });
   }
 
   async getBestSellers(limit: number = 5) {
-    return this.prisma.book.findMany({
+    return this.prisma.flower.findMany({
       where: {
         status: 'AVAILABLE',
       },
@@ -176,7 +204,7 @@ export class FlowerService {
   }
 
   async getNewArrivals() {
-    return this.prisma.book.findMany({
+    return this.prisma.flower.findMany({
       where: {
         status: 'AVAILABLE',
       },

@@ -31,7 +31,7 @@ export class OrderService {
       include: {
         items: {
           include: {
-            book: true,
+            flower: true,
           },
         },
       },
@@ -57,10 +57,15 @@ export class OrderService {
 
   async createOrder(
     userId: string,
-    items: { bookId: string; quantity: number; price: number }[],
+    items: { flowerId: string; quantity: number; price: number; shopId?: string }[],
     payment: paymentMethod,
     userAddress: any,
   ) {
+    // Ensure all items belong to the same shop
+    const shopIds = new Set(items.map(i => i.shopId || null));
+    if (shopIds.size > 1) {
+      throw new BadRequestException('Không thể thanh toán chung các sản phẩm thuộc nhiều shop khác nhau');
+    }
     const total = items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
@@ -83,9 +88,10 @@ export class OrderService {
           userAddress,
           items: {
             create: items.map((item) => ({
-              bookId: item.bookId,
+              flowerId: item.flowerId,
               quantity: item.quantity,
               price: item.price,
+              shopId: item.shopId,
             })),
           },
         },
@@ -103,8 +109,8 @@ export class OrderService {
       }
 
       for (const item of items) {
-        await tx.book.update({
-          where: { id: item.bookId },
+        await tx.flower.update({
+          where: { id: item.flowerId },
           data: {
             stock: { decrement: item.quantity },
             sold: { increment: item.quantity },
@@ -130,25 +136,27 @@ export class OrderService {
       data: { status: 'CANCELLED' },
     });
 
-    const wallet = await this.prisma.wallet.findUnique({
-      where: { userId: order.userId },
-    });
-
-    if (!wallet) {
-      throw new NotFoundException('Wallet not found');
-    }
-
+    // Nếu thanh toán bằng ví thì hoàn tiền vào ví
     if (order.payment === paymentMethod.Wallet) {
-      await this.prisma.wallet.update({
+      const wallet = await this.prisma.wallet.findUnique({ where: { userId: order.userId } });
+      if (!wallet) {
+        // Nếu không tìm thấy ví nhưng order thanh toán bằng ví, trả lỗi rõ ràng
+        throw new NotFoundException('Wallet not found for user to refund');
+      }
+
+      const updated = await this.prisma.wallet.update({
         where: { id: wallet.id },
         data: {
           balance: wallet.balance + order.total,
           lastUpdated: new Date(),
         },
       });
+
+      return { walletBalance: updated.balance };
     }
 
-    return { walletBalance: wallet.balance };
+    // Nếu không phải thanh toán bằng ví, chỉ trả về trạng thái hủy
+    return { status: 'CANCELLED' };
   }
 
 async getOrders(userId: string, limit?: number) {
@@ -182,7 +190,7 @@ async getOrders(userId: string, limit?: number) {
       user: true,
       items: {
         include: {
-          book: true,
+          flower: true,
         },
       },
     },

@@ -6,7 +6,7 @@ import { MdOutlinePayment } from 'react-icons/md';
 import { BiSolidUser, BiSolidPhone } from 'react-icons/bi';
 import { PiMapPinLineBold } from 'react-icons/pi';
 
-const AdminOrderDetailPage = () => {
+const AdminOrderDetailPage = ({ vendorMode = false }) => {
     const { id } = useParams();
     const [order, setOrder] = useState(null);
 
@@ -30,8 +30,9 @@ const AdminOrderDetailPage = () => {
     };
 
     useEffect(() => {
+        const endpoint = vendorMode ? `/vendor/order/detail/${id}` : `/admin/order/detail/${id}`;
         axios
-            .get(`/admin/order/detail/${id}`)
+            .get(endpoint)
             .then(res => {
                 setOrder(res.data);
                 console.log(res.data);
@@ -45,7 +46,7 @@ const AdminOrderDetailPage = () => {
                 }
             })
             .catch(err => console.error(err));
-    }, [id]);
+    }, [id, vendorMode]);
     if (!order) return <div className="text-center mt-20 text-xl">Đang tải đơn hàng...</div>;
 
     return (
@@ -93,14 +94,16 @@ const AdminOrderDetailPage = () => {
 
                             <div key={index} className="flex items-center justify-between bg-gray-50 border rounded-lg p-4">
                                 <div className="flex items-center gap-4">
-                                    <img
-                                        src={`${import.meta.env.VITE_API_URL}${item.book.image}`}
-                                        alt={item.book.title}
-                                        className="w-10 h-10 object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
-                                        onClick={() => setSelectedImage(`${import.meta.env.VITE_API_URL}${item.book.image}`)}
-                                    />
+                                    {item.flower?.image && (
+                                        <img
+                                            src={`${import.meta.env.VITE_API_URL}${item.flower.image}`}
+                                            alt={item.flower.title}
+                                            className="w-20 h-20 object-cover cursor-pointer hover:scale-105 transition-transform duration-200 rounded"
+                                            onClick={() => setSelectedImage(`${import.meta.env.VITE_API_URL}${item.flower.image}`)}
+                                        />
+                                    )}
                                     <div>
-                                        <p className="font-semibold">{item.book.title}</p>
+                                        <p className="font-semibold">{item.flower?.title || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">

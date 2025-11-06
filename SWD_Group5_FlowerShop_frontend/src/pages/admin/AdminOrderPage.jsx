@@ -52,7 +52,7 @@ const statusMap = {
 };
 
 
-const AdminOrderPage = () => {
+const AdminOrderPage = ({ vendorMode = false }) => {
     const [orders, setOrders] = useState([]);
     const [filterStatus, setFilterStatus] = useState('');
     const [user] = useState(() => {
@@ -63,16 +63,20 @@ const AdminOrderPage = () => {
 
     useEffect(() => {
         fetchOrders();
-    }, [filterStatus]);
+    }, [filterStatus, vendorMode]);
 
     const fetchOrders = async () => {
         try {
-            const res = await axios.get(`/admin/order/get`, {
+            const endpoint = vendorMode ? `/vendor/order/get` : `/admin/order/get`;
+            const res = await axios.get(endpoint, {
                 params: { status: filterStatus }
             });
-            setOrders(res.data);
+            setOrders(res.data || []);
         } catch (err) {
-            console.error('Lỗi khi lấy danh sách đơn hàng:', err);
+                console.error('Lỗi khi lấy danh sách đơn hàng:', err);
+                // show detailed server error if available
+                const msg = err?.response?.data?.message || err?.message || 'Lỗi khi lấy danh sách đơn hàng';
+                MySwal.fire('Lỗi', msg, 'error');
         }
     };
 
@@ -153,7 +157,8 @@ const AdminOrderPage = () => {
 
 
     const handleView = (orderId) => {
-        navigate(`/admin-dashboard/order/detail/${orderId}`);
+        const path = vendorMode ? `/vendor-dashboard/orders/detail/${orderId}` : `/admin-dashboard/order/detail/${orderId}`;
+        navigate(path);
     };
 
     console.log(orders);

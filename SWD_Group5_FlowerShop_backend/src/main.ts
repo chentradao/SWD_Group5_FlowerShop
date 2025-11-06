@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join, resolve } from 'path';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const allowedOrigins = ['http://localhost:5173','http://localhost:4173','https://fuhushu.onrender.com'];
@@ -19,6 +20,9 @@ async function bootstrap() {
     prefix: '/uploads',
   });
 
+  // Parse cookies so strategies that read req.cookies (e.g. cookie-based JWT) work
+  app.use(cookieParser());
+
   // ✅ Global pipes
   app.useGlobalPipes(
     new ValidationPipe({
@@ -29,8 +33,8 @@ async function bootstrap() {
 
   // ✅ Swagger setup
   const config = new DocumentBuilder()
-    .setTitle('BookShop API')
-    .setDescription('API documentation for the book store platform')
+    .setTitle('FlowerShop API')
+    .setDescription('API documentation for the multi-vendor flower shop platform')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -42,6 +46,6 @@ async function bootstrap() {
   await app.listen(PORT, '0.0.0.0');
 
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`📚 Swagger docs available at http://localhost:${PORT}/api`);
+  console.log(`🌸 Swagger docs available at http://localhost:${PORT}/api`);
 }
 bootstrap();

@@ -25,9 +25,9 @@ export const AuthProvider = ({ children }) => {
     if (!user?.role) return '/';
     switch (user.role.toLowerCase()) {
       case 'admin':
-        return '/admin-dashboard/books';
+        return '/admin-dashboard';
       case 'vendor':
-        return '/vendor-dashboard/products';
+        return '/vendor-dashboard/orders';
       case 'user':
         return '/';
       default:

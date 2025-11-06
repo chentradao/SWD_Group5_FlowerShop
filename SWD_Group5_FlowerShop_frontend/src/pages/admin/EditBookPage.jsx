@@ -1,4 +1,5 @@
-import BookForm from "../../components/BookForm";
+import FlowerForm from "../../components/FlowerForm";
+
 export default function EditBookPage() {
-  return <BookForm isEdit />;
+  return <FlowerForm isEdit />;
 }

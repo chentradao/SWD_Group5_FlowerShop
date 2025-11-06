@@ -1,8 +1,10 @@
 import React from 'react';
 import { Route } from 'react-router-dom';
 import VendorLayout from '../components/VendorLayout';
-import VendorProductsPage from './vendor/VendorProductsPage';
-import BookForm from '../components/BookForm';
+import ManageBookPage from './admin/ManageBookPage';
+import AdminOrderPage from './admin/AdminOrderPage';
+import AdminOrderDetailPage from './admin/AdminOrderDetailPage';
+import FlowerForm from '../components/FlowerForm';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 const VendorRoutes = () => {
@@ -15,12 +17,12 @@ const VendorRoutes = () => {
         </ProtectedRoute>
       }
     >
-      <Route path="products" element={<VendorProductsPage />} />
-      <Route path="products/new" element={<BookForm />} />
-      <Route path="products/edit/:id" element={<BookForm isEdit={true} />} />
-      <Route path="orders" element={<div>Quản lý đơn hàng</div>} />
-      <Route path="shop-profile" element={<div>Thông tin shop</div>} />
-      <Route path="revenue" element={<div>Thống kê doanh thu</div>} />
+  <Route path="products" element={<ManageBookPage vendorMode={true} />} />
+      <Route path="products/new" element={<FlowerForm />} />
+      <Route path="products/edit/:id" element={<FlowerForm isEdit={true} />} />
+  <Route path="orders" element={<AdminOrderPage vendorMode={true} />} />
+  <Route path="orders/detail/:id" element={<AdminOrderDetailPage vendorMode={true} />} />
+      {/* Removed placeholder routes for shop profile and revenue to keep vendor dashboard focused */}
     </Route>
   );
 };

@@ -12,7 +12,7 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 
-const AdminLayout = () => {
+const AdminLayout = ({ navigationItemsOverride = null, title = 'Quản trị' }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeItem, setActiveItem] = useState("dashboard");
   const location = useLocation();
@@ -20,7 +20,6 @@ const AdminLayout = () => {
 
   const navigate = useNavigate();
 
-  const [bestSellers, setBestSellers] = useState([]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -31,26 +30,15 @@ const AdminLayout = () => {
     return cached ? JSON.parse(cached) : null;
   });
 
-  useEffect(() => {
-    const fetchBestSellers = async () => {
-      try {
-        const res = await axios.get('/books/best-sellers');
-        setBestSellers(res.data);
-      } catch (err) {
-        console.error("Lỗi khi tải sách bán chạy:", err);
-      }
-    };
-    fetchBestSellers();
-  }, []);
+  // Best sellers removed - products are now managed by vendors
 
-  const navigationItems = [
+  const defaultNavigation = [
     { id: "dashboard", name: "Bảng điều khiển", icon: FaHome, path: "/admin-dashboard" },
-  { id: "book", name: "Sách", icon: FaBook, path: "/admin-dashboard/books" },
-  { id: "author", name: "Tác giả", icon: FaUserEdit, path: "/admin-dashboard/authors" },
-  { id: "category", name: "Thể loại", icon: FaTags, path: "/admin-dashboard/categories" },
-  { id: "user", name: "Người dùng", icon: FaUserFriends, path: "/admin-dashboard/users" },
-  { id: "order", name: "Đơn hàng", icon: FaShoppingCart, path: "/admin-dashboard/orders" },
+    { id: "category", name: "Thể loại", icon: FaTags, path: "/admin-dashboard/categories" },
+    { id: "user", name: "Người dùng", icon: FaUserFriends, path: "/admin-dashboard/users" },
   ];
+
+  const navigationItems = navigationItemsOverride || defaultNavigation;
 
   const handleLogout = async () => {
     try {
@@ -78,7 +66,7 @@ const AdminLayout = () => {
                 </svg>
               </div>
               {isSidebarOpen && (
-                <span className="ml-3 text-xl font-bold">Quản trị</span>
+                <span className="ml-3 text-xl font-bold">{title}</span>
               )}
             </div>
           </div>
@@ -105,25 +93,7 @@ const AdminLayout = () => {
               })}
             </div>
 
-            {/* Best Sellers */}
-            {isSidebarOpen && (
-              <div className="mt-8">
-                <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Sách bán chạy
-                </h3>
-                <div className="mt-3 space-y-1">
-                  {bestSellers.map((book) => (
-                    <div
-                      key={book.id}
-                      className="flex items-center px-3 py-2 text-gray-300 hover:text-white cursor-pointer"
-                    >
-                      <BookOpenIcon className="w-5 h-5" />
-                      <span className="ml-3 text-sm truncate">{book.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Best Sellers - Removed as products are now managed by vendors */}
           </nav>
 
           {/* Đăng xuất */}

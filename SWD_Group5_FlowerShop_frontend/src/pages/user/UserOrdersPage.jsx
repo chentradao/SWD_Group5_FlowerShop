@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from "../../services/axiosConfig";
+import { getProduct, getProductId, getProductImageUrl, getProductPrice } from "../../services/flowerService";
 import { FaBox, FaShippingFast, FaCheckCircle, FaTrashAlt, FaTimesCircle } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -237,29 +238,23 @@ const UserOrdersPage = () => {
               {/* Danh sách sản phẩm cuộn được */}
               <ul className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
                 {selectedOrder.items?.map((item, idx) => {
-                  console.log("Item:", item);
-                  console.log(selectedOrder);
-
+                  const product = getProduct(item);
                   return (
                     <li key={idx} className="flex justify-between items-center border-b py-2">
                       <div className="flex items-center gap-2">
                         <img
-                          src={`${import.meta.env.VITE_API_URL}${item.book.image}`}
-                          alt={item.book.title}
+                          src={getProductImageUrl(product?.image)}
+                          alt={product?.title}
                           className="w-10 h-10 object-cover"
                         />
                         <div className='flex flex-col'>
-                          <span>{item.book.title} </span>
+                          <span>{product?.title} </span>
                           <span className="text-xs text-gray-500">Số Lượng: {item.quantity}</span>
                         </div>
-
-
                       </div>
                       <div className="flex items-center gap-4">
-                        <div > Giá: <span className="text-red-600 font-semibold">{item.book.price.toLocaleString()}đ</span></div>
+                        <div > Giá: <span className="text-red-600 font-semibold">{(product?.price || 0).toLocaleString()}đ</span></div>
                       </div>
-
-
                     </li>
                   );
                 })}

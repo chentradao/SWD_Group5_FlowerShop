@@ -24,7 +24,7 @@ export class OrderController {
     @Body()
     body: {
       userId: string;
-      items: { bookId: string; quantity: number; price: number }[];
+      items: { flowerId: string; quantity: number; price: number; shopId?: string }[];
       payment: paymentMethod;
       userAddress: any;
     },

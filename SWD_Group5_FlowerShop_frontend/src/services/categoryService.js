@@ -8,7 +8,7 @@ const instance = axios.create({
 
 const getCategories = async () => {
     try {
-        const res = await instance.get('categories/');
+        const res = await instance.get('categories');
         return res.data;
     } catch (err) {
         console.error('Error fetching categories:', err);

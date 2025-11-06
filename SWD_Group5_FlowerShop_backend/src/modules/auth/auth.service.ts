@@ -86,6 +86,16 @@ export class AuthService {
     });
     console.log(wallet?.balance);
     const payload = { sub: user.id, email: user.email, role: user.role };
+
+    // If the user is a vendor, include their shop info to simplify frontend logic
+  let shop: any = null;
+    try {
+      shop = await this.prisma.shop.findFirst({ where: { ownerId: user.id } });
+    } catch (err) {
+      // ignore - shop may not exist
+      shop = null;
+    }
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -94,6 +104,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         wallet: wallet?.balance,
+        shop: shop ? { id: shop.id, name: shop.name } : undefined,
       },
     };
   }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import cartService from "../../services/cartService";
-
+import { getProduct, getProductId, getProductImageUrl, getProductPrice } from "../../services/flowerService";
 const CheckoutPage = () => {
   const [user, setUser] = useState(null);
   const [checkoutItems, setCheckoutItems] = useState([]);
@@ -75,7 +75,7 @@ const CheckoutPage = () => {
   };
 
   const total = checkoutItems.reduce(
-    (sum, item) => sum + (item.book.price || 0) * (item.quantity || 0),
+    (sum, item) => sum + getProductPrice(item) * (item.quantity || 0),
     0
   );
 
@@ -97,13 +97,20 @@ const CheckoutPage = () => {
     }
 
     try {
+        // Ensure all checkout items are from the same shop
+        const shopSet = new Set(checkoutItems.map(item => getProduct(item)?.shopId || getProduct(item)?.shop?.id || null));
+        if (shopSet.size > 1) {
+          alert('Không thể thanh toán các sản phẩm từ nhiều shop khác nhau trong cùng một đơn. Vui lòng tách đơn.');
+          return;
+        }
       const payload = {
         userId: user.id,
         items: checkoutItems.map((item) => ({
-          bookId: item.book.id,
-          quantity: item.quantity,
-          price: item.book.price,
-        })),
+            flowerId: getProductId(item),
+            quantity: item.quantity,
+            price: getProductPrice(item),
+            shopId: getProduct(item)?.shopId || getProduct(item)?.shop?.id || null,
+          })),
         payment: form.paymentMethod,
         userAddress: {
           fullName: form.name,
@@ -132,11 +139,10 @@ const CheckoutPage = () => {
 
       // ✅ Xóa trong localStorage
       const cartItems = JSON.parse(localStorage.getItem("cart_items") || "[]");
-      const updatedCart = cartItems.filter(
-        (cartItem) =>
-          !checkoutItems.some(
-            (checkoutItem) => checkoutItem.book.id === cartItem.book.id
-          )
+      const updatedCart = cartItems.filter((cartItem) =>
+        !checkoutItems.some(
+          (checkoutItem) => getProductId(checkoutItem) === getProductId(cartItem)
+        )
       );
       localStorage.setItem("cart_items", JSON.stringify(updatedCart));
       localStorage.removeItem("checkout_items");
@@ -162,23 +168,20 @@ const CheckoutPage = () => {
         <div className="bg-white shadow p-6 rounded mb-6">
           <h2 className="text-lg font-semibold mb-4">Sản phẩm</h2>
           <ul className="divide-y">
-            {checkoutItems.map((item) => {
-              const tempPrice = (item.book.price || 0) * (item.quantity || 0);
+              {checkoutItems.map((item) => {
+              const product = getProduct(item);
+              const tempPrice = (product?.price || 0) * (item.quantity || 0);
               return (
                 <li key={item.id} className="py-4 flex items-center gap-4">
                   <img
-                    src={
-                      item.book.image?.startsWith("http")
-                        ? item.book.image
-                        : `${import.meta.env.VITE_API_URL}${item.book.image}`
-                    }
-                    alt={item.book.title}
+                    src={getProductImageUrl(product?.image)}
+                    alt={product?.title}
                     className="w-20 h-20 object-cover rounded"
                   />
                   <div className="flex-1">
-                    <p className="font-medium">{item.book.title}</p>
+                    <p className="font-medium">{product?.title}</p>
                     <p className="text-sm text-gray-500">
-                      Giá: {item.book.price.toLocaleString()}₫
+                      Giá: {product?.price?.toLocaleString()}₫
                     </p>
                     <div className="flex items-center mt-2 space-x-2">
                       <button
@@ -196,7 +199,7 @@ const CheckoutPage = () => {
                           updateQuantity(item.id, item.quantity + 1)
                         }
                         className="px-2 py-1 border rounded"
-                        disabled={item.quantity >= item.book.stock}
+                        disabled={item.quantity >= product?.stock}
                       >
                         +
                       </button>

@@ -11,7 +11,10 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -29,10 +32,10 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { FlowerService } from './flower.service';
-import { CreateBookDto } from './dto/create-book.dto';
-import { UpdateBookDto } from './dto/update-book.dto';
+import { CreateFlowerDto } from './dto/create-flower.dto';
+import { UpdateFlowerDto } from './dto/update-flower.dto';
 import { Prisma } from '@prisma/client';
-import { BookFilterDto } from './dto/book-filter.dto';
+import { FlowerFilterDto } from './dto/flower-filter.dto';
 
 @ApiTags('Flowers')
 @Controller('flowers')
@@ -58,7 +61,7 @@ export class FlowerController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get book by ID' })
+  @ApiOperation({ summary: 'Get flower by ID' })
   @ApiParam({ name: 'id', required: true })
   getById(@Param('id') id: string) {
     return this.flowerService.getById(id);
@@ -87,6 +90,7 @@ export class FlowerController {
   }
 
   @Post('create-flower')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Upload image and create flower' })
   @ApiConsumes('multipart/form-data')
@@ -111,7 +115,7 @@ export class FlowerController {
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
-        destination: './uploads/books',
+        destination: './uploads/flowers',
         filename: (req, file, cb) => {
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -124,15 +128,24 @@ export class FlowerController {
   async uploadFlowerImage(
     @UploadedFile() file: Express.Multer.File,
     @Body() body: any,
+    @Req() req: any,
   ) {
     if (!file) {
       throw new BadRequestException('Image file is required');
     }
+
+    // Get vendor's shop
+    const shop = await this.flowerService.getVendorShop(req.user);
+    if (!shop) {
+      throw new BadRequestException('Vendor must have a shop to create flowers');
+    }
+
     const imagePath = `/uploads/flowers/${file.filename}`;
-    return this.flowerService.createFlowerWithImage(body, imagePath);
+    return this.flowerService.createFlowerWithImage(body, imagePath, shop.id);
   }
 
   @Patch(':id/update')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update flower with optional image' })
   @ApiConsumes('multipart/form-data')
@@ -157,7 +170,7 @@ export class FlowerController {
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
-        destination: './uploads/books',
+        destination: './uploads/flowers',
         filename: (req, file, cb) => {
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -170,13 +183,18 @@ export class FlowerController {
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() body: any,
+    @Req() req: any,
   ) {
+    // Verify vendor owns this flower
+    await this.flowerService.verifyVendorOwnership(id, req.user);
+
     const imagePath = file ? `/uploads/flowers/${file.filename}` : null;
     return this.flowerService.updateFlowerWithImage(id, body, imagePath);
   }
   @Patch(':id/stock')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Cập nhật tồn kho sách' })
+  @ApiOperation({ summary: 'Cập nhật tồn kho hoa' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -185,10 +203,18 @@ export class FlowerController {
       },
     },
   })
-  async updateStock(@Param('id') id: string, @Body('stock') stock: number) {
+  async updateStock(
+    @Param('id') id: string, 
+    @Body('stock') stock: number,
+    @Req() req: any
+  ) {
     if (isNaN(stock) || stock < 0) {
       throw new BadRequestException('Số lượng tồn kho không hợp lệ');
     }
+
+    // Verify vendor owns this flower before updating stock
+    await this.flowerService.verifyVendorOwnership(id, req.user);
+    
     return this.flowerService.updateStock(id, stock);
   }
 

@@ -16,8 +16,9 @@ import {
 } from 'react-icons/fa';
 import categoryServices from '../services/categoryServices'
 import Cookies from 'js-cookie';
+import authService from '../services/AuthService';
 
-export default function Sidebar({ onClose }) {
+export default function Sidebar({ onClose, menuItems, userRole }) {
   const [orderStats, setOrderStats] = useState({ totalOrders: 0, totalItems: 0 });
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
@@ -79,13 +80,7 @@ export default function Sidebar({ onClose }) {
 
   const handleLogout = async () => {
     try {
-      // Gửi request đến server để xóa cookie
-      await axios.post('/auth/logout', {}, { withCredentials: true });
-
-      // Xóa dữ liệu ở localStorage
-      localStorage.removeItem('user');
-
-      // Chuyển hướng và reset state
+      authService.logout();
       navigate(`/`);
       setIsLogin(false);
       setUser(null);
@@ -144,27 +139,52 @@ export default function Sidebar({ onClose }) {
         )}
       </div>
 
-      {/* Categories Section */}
+      {/* Main Navigation / Categories Section */}
       <div className="flex-1 overflow-hidden">
         <div className="p-4">
-          <h3 className="text-lg font-semibold mb-3">Danh mục sách</h3>
-          {/* Categories Container with conditional scroll */}
-          <div className={`space-y-2 ${categories.length > 7 ? 'max-h-64 overflow-y-scroll scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800' : ''}`}>
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                to={`/category/${category.id}`}
-                onClick={handleLinkClick}
-                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-800 transition-colors group"
-              >
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm font-medium group-hover:text-blue-400 transition-colors">
-                    {category.name}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {/* If a menu is provided (e.g. vendor dashboard), render it. Otherwise render categories. */}
+          {Array.isArray(menuItems) && menuItems.length > 0 ? (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">{userRole === 'vendor' ? 'Vendor Menu' : 'Menu'}</h3>
+              <div className="space-y-2">
+                {menuItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={handleLinkClick}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-800 transition-colors group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium group-hover:text-blue-400 transition-colors">
+                        {item.label}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold mb-3">Danh mục sách</h3>
+              {/* Categories Container with conditional scroll */}
+              <div className={`space-y-2 ${categories.length > 7 ? 'max-h-64 overflow-y-scroll scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800' : ''}`}>
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    to={`/category/${category.id}`}
+                    onClick={handleLinkClick}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-800 transition-colors group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium group-hover:text-blue-400 transition-colors">
+                        {category.name}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

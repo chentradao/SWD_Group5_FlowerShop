@@ -16,7 +16,7 @@ export class CategoryService {
         name,
       },
       include: {
-        books: true,
+        flowers: true,
       },
     });
   }
@@ -24,7 +24,7 @@ export class CategoryService {
   async findAllCategories() {
     return this.prisma.category.findMany({
       include: {
-        books: true,
+        flowers: true,
       },
     });
   }
@@ -32,7 +32,7 @@ export class CategoryService {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: {
-        books: true,
+        flowers: true,
       },
     });
 

@@ -28,20 +28,11 @@ model User {
 model CartItem {
   id       String   @id @default(uuid())
   userId   String
-  bookId   String
+  flowerId String
   quantity Int      @default(1)
   addedAt  DateTime @default(now())
-  book     Book     @relation(fields: [bookId], references: [id])
+  flower   Flower   @relation(fields: [flowerId], references: [id])
   user     User     @relation(fields: [userId], references: [id])
-}
-
-model Author {
-  id        String    @id @default(uuid())
-  name      String
-  bio       String?
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
-  books     Book[]    @relation("AuthorToBook")
 }
 
 model Category {
@@ -49,38 +40,36 @@ model Category {
   name      String    @unique
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
-  books     Book[]    @relation("BookToCategory")
+  flowers   Flower[]  @relation("FlowerToCategory")
 }
 
-model Book {
-  id          String      @id @default(uuid())
+model Flower {
+  id          String       @id @default(uuid())
   title       String
   description String?
   image       String
   price       Float
-  stock       Int         @default(0)
-  sold        Int         @default(0)
-  publishedAt DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  status      BookStatus  @default(AVAILABLE)
+  stock       Int          @default(0)
+  sold        Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  status      FlowerStatus @default(AVAILABLE)
   shopId      String?
-  shop        Shop?       @relation(fields: [shopId], references: [id])
+  shop        Shop?        @relation(fields: [shopId], references: [id])
   cartItems   CartItem[]
   orderItems  OrderItem[]
   reviews     Review[]
-  authors     Author[]    @relation("AuthorToBook")
-  categories  Category[]  @relation("BookToCategory")
+  categories  Category[]   @relation("FlowerToCategory")
 }
 
 model Review {
   id        String   @id @default(uuid())
   rating    Int
   comment   String?
-  bookId    String
+  flowerId  String
   userId    String
   createdAt DateTime @default(now())
-  book      Book     @relation(fields: [bookId], references: [id])
+  flower    Flower   @relation(fields: [flowerId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 }
 
@@ -100,11 +89,11 @@ model Order {
 model OrderItem {
   id       String @id @default(uuid())
   orderId  String
-  bookId   String
+  flowerId String
   shopId   String?
   quantity Int
   price    Float
-  book     Book   @relation(fields: [bookId], references: [id])
+  flower   Flower @relation(fields: [flowerId], references: [id])
   order    Order  @relation(fields: [orderId], references: [id])
   shop     Shop?  @relation(fields: [shopId], references: [id])
 }
@@ -147,7 +136,7 @@ model Shop {
   updatedAt   DateTime @updatedAt
 
   owner User @relation(fields: [ownerId], references: [id])
-  books Book[]
+  flowers Flower[]
   orderItems OrderItem[]
 
   @@map("shop")
@@ -164,7 +153,7 @@ enum TransactionStatus {
   FAILED
 }
 
-enum BookStatus {
+enum FlowerStatus {
   AVAILABLE
   OUT_OF_STOCK
   DISCONTINUED

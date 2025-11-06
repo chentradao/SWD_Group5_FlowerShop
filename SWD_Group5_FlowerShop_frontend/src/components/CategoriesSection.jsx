@@ -25,7 +25,7 @@ const CategoriesSection = () => {
         <section className="px-10 py-12 bg-[#FFEFD5]">
             <div className="flex justify-center items-center mb-4 text-center">
                 <h2 className="text-2xl font-bold tracking-wide text-gray-900 uppercase mb-4">
-                    Danh Mục Sách
+                    Danh Mục SẢN PHẨM
                 </h2>
             </div>
 

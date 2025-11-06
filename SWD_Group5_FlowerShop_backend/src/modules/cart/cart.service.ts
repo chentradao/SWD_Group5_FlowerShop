@@ -6,26 +6,42 @@ export class CartService {
   constructor(private prisma: PrismaService) {}
 
   // Thêm sản phẩm vào giỏ hàng
-  async addToCart(userId: string, bookId: string, quantity: number = 1) {
-    // Kiểm tra sách có tồn tại không
-    const book = await this.prisma.book.findUnique({ where: { id: bookId } });
-    if (!book) {
-      throw new NotFoundException(`Book with ID ${bookId} not found`);
+  async addToCart(userId: string, flowerId: string, quantity: number = 1) {
+    // Kiểm tra hoa có tồn tại không
+    const flower = await this.prisma.flower.findUnique({ where: { id: flowerId } });
+    if (!flower) {
+      throw new NotFoundException(`Flower with ID ${flowerId} not found`);
     }
-    if (book.status !== 'AVAILABLE') {
-      throw new BadRequestException('Book is not available for sale');
+    if (flower.status !== 'AVAILABLE') {
+      throw new BadRequestException('Flower is not available for sale');
+    }
+
+    // Kiểm tra ràng buộc: tất cả item trong giỏ phải cùng shop
+    const userCart = await this.prisma.cartItem.findMany({
+      where: { userId },
+      include: { flower: true },
+    });
+
+    if (userCart.length > 0) {
+      const existingShopId = userCart[0].flower?.shopId || null;
+      // If current flower belongs to a different shop, forbid adding
+      if (existingShopId && flower.shopId && existingShopId !== flower.shopId) {
+        throw new BadRequestException(
+          'Không thể đặt nhiều sản phẩm từ các shop khác nhau trong cùng 1 đơn. Vui lòng xóa giỏ hàng hoặc mua riêng từng shop.'
+        );
+      }
     }
 
     // Kiểm tra nếu đã có trong giỏ thì tăng số lượng
     const existingItem = await this.prisma.cartItem.findFirst({
-      where: { userId, bookId },
+      where: { userId, flowerId },
     });
 
     if (existingItem) {
       return this.prisma.cartItem.update({
         where: { id: existingItem.id },
         data: { quantity: existingItem.quantity + quantity },
-        include: { book: true },
+        include: { flower: true },
       });
     }
 
@@ -33,10 +49,10 @@ export class CartService {
     return this.prisma.cartItem.create({
       data: {
         userId,
-        bookId,
+        flowerId,
         quantity,
       },
-      include: { book: true },
+      include: { flower: true },
     });
   }
 
@@ -44,7 +60,7 @@ export class CartService {
   async getCart(userId: string) {
     return this.prisma.cartItem.findMany({
       where: { userId },
-      include: { book: true },
+      include: { flower: true },
       orderBy: { addedAt: 'desc' },
     });
   }
@@ -65,7 +81,7 @@ export class CartService {
     return this.prisma.cartItem.update({
       where: { id: cartItemId },
       data: { quantity },
-      include: { book: true },
+      include: { flower: true },
     });
   }
 
